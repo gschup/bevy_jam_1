@@ -1,11 +1,15 @@
 use bevy::prelude::*;
 
+use super::PIXELS_PER_METER;
+
 #[derive(Debug)]
 pub struct Gravity(pub Vec2);
 
 impl Default for Gravity {
     fn default() -> Self {
-        Self(Vec2::new(0., -9.81))
+        // For real-world gravity, we should probably tweak this, though.
+        // Maybe even have per object gravity?
+        Self(Vec2::new(0., -9.81 * PIXELS_PER_METER))
     }
 }
 

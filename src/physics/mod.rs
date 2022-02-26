@@ -14,6 +14,8 @@ mod utils;
 
 pub struct PhysicsPlugin;
 
+pub const PIXELS_PER_METER: f32 = 24.0 / 1.8; // assuming janitor is 1.80 tall and 24 pixels tall
+
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Gravity>()
