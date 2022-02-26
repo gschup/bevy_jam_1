@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::round::{JUMP_HEIGHT, JUMP_TIME_TO_PEAK};
+
 use super::PIXELS_PER_METER;
 
 #[derive(Debug)]
@@ -10,8 +12,8 @@ impl Default for Gravity {
         // For real-world gravity,
         // we should probably tweak this, though. Maybe even have per object gravity?
         // Self(Vec2::new(0., -9.81 * PIXELS_PER_METER))
-        Self(Vec2::new(0., -9.81 * PIXELS_PER_METER * 4.0))
-        // TODO: maybe derive from hangtime as suggested in: https://www.youtube.com/watch?v=hG9SzQxaCm8
+        let grav = (-2. * JUMP_HEIGHT) / JUMP_TIME_TO_PEAK; // derived as suggested in: https://www.youtube.com/watch?v=hG9SzQxaCm8
+        Self(Vec2::new(0., grav * PIXELS_PER_METER))
     }
 }
 
