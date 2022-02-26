@@ -17,10 +17,7 @@ use physics::{
     prelude::*,
 };
 use physics::{create_physics_stage, PhysicsUpdateStage};
-use round::{
-    apply_inputs, check_win, ground_check, increase_frame_count, move_players, print_p2p_events,
-    setup_round, spawn_players, FrameCount,
-};
+use round::prelude::*;
 
 const NUM_PLAYERS: usize = 2;
 const FPS: usize = 60;
@@ -68,7 +65,7 @@ pub struct FontAssets {
 #[derive(Debug)]
 pub struct GGRSConfig;
 impl Config for GGRSConfig {
-    type Input = round::Input;
+    type Input = round::resources::Input;
     type State = u8;
     type Address = String;
 }
@@ -84,7 +81,7 @@ fn main() {
 
     GGRSPlugin::<GGRSConfig>::new()
         .with_update_frequency(FPS)
-        .with_input_system(round::input)
+        .with_input_system(input)
         .register_rollback_type::<Transform>()
         // .register_rollback_type::<Velocity>()
         .register_rollback_type::<Pos>()
@@ -179,7 +176,9 @@ fn main() {
                 .with_system(spawn_players),
         )
         .add_system_set(SystemSet::on_update(AppState::RoundLocal).with_system(check_win))
-        .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(round::cleanup))
+        .add_system_set(
+            SystemSet::on_exit(AppState::RoundLocal).with_system(round::systems::cleanup),
+        )
         // online round
         .add_system_set(
             SystemSet::on_enter(AppState::RoundOnline)
@@ -191,7 +190,9 @@ fn main() {
                 .with_system(print_p2p_events)
                 .with_system(check_win),
         )
-        .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(round::cleanup));
+        .add_system_set(
+            SystemSet::on_exit(AppState::RoundOnline).with_system(round::systems::cleanup),
+        );
 
     #[cfg(target_arch = "wasm32")]
     {
