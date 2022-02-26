@@ -35,7 +35,7 @@ pub mod prelude {
     pub use super::{
         bundle::*,
         components::{BoxCollider, Pos, Vel},
-        resources::Gravity,
+        resources::{Contacts, Gravity, StaticContacts},
         PhysicsPlugin,
     };
 }

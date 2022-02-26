@@ -18,8 +18,8 @@ use physics::{
 };
 use physics::{create_physics_stage, PhysicsUpdateStage};
 use round::{
-    apply_inputs, check_win, increase_frame_count, move_players, print_p2p_events, setup_round,
-    spawn_players, FrameCount,
+    apply_inputs, check_win, ground_check, increase_frame_count, move_players, print_p2p_events,
+    setup_round, spawn_players, FrameCount,
 };
 
 const NUM_PLAYERS: usize = 2;
@@ -49,6 +49,7 @@ pub enum AppState {
 
 #[derive(SystemLabel, Debug, Clone, Hash, Eq, PartialEq)]
 enum SystemLabel {
+    GroundCheck,
     Input,
 }
 
@@ -101,7 +102,12 @@ fn main() {
                     PhysicsUpdateStage,
                     ROLLBACK_SYSTEMS,
                     SystemStage::parallel()
-                        .with_system(apply_inputs.label(SystemLabel::Input))
+                        .with_system(ground_check.label(SystemLabel::GroundCheck))
+                        .with_system(
+                            apply_inputs
+                                .label(SystemLabel::Input)
+                                .after(SystemLabel::GroundCheck),
+                        )
                         .with_system(move_players.after(SystemLabel::Input))
                         .with_system(increase_frame_count),
                 )

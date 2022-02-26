@@ -48,6 +48,10 @@ pub struct PlatformerControls {
     horizontal: f32,
 }
 
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct Grounded(pub bool);
+
 #[derive(Default, Reflect, Hash, Component)]
 #[reflect(Hash)]
 pub struct FrameCount {
@@ -179,6 +183,7 @@ pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>
             })
             .insert(Player { handle })
             .insert(PlatformerControls::default())
+            .insert(Grounded::default())
             .insert(Checksum::default())
             .insert(Rollback::new(rip.next_id()))
             .insert(RoundEntity);
@@ -222,6 +227,29 @@ pub fn increase_frame_count(mut frame_count: ResMut<FrameCount>) {
     frame_count.frame += 1;
 }
 
+/// Needs to happen before input
+pub fn ground_check(
+    // todo: would maybe be cleaner to just expose one resource, that includes dynamics as well
+    // just check against statics (ground) for now
+    contacts: ResMut<StaticContacts>,
+    mut query: Query<&mut Grounded>,
+) {
+    // just clear existing state
+    for mut grounded in query.iter_mut() {
+        grounded.0 = false
+    }
+
+    for (dynamic_entity, _, normal) in contacts.0.iter() {
+        // The normal points from the dynamic entity to the static entity
+        // so a negative y means we're standing on top of the other collider
+        if normal.y < 0. {
+            if let Ok(mut grounded) = query.get_mut(*dynamic_entity) {
+                grounded.0 = true;
+            }
+        }
+    }
+}
+
 /// Needs to happen before all systems that use PlatformerControls, or it will desync
 pub fn apply_inputs(
     mut query: Query<(&mut PlatformerControls, &Player)>,
@@ -253,15 +281,15 @@ pub fn apply_inputs(
 }
 
 pub fn move_players(
-    mut query: Query<(&mut Vel, &PlatformerControls), With<Rollback>>,
+    mut query: Query<(&mut Vel, &Grounded, &PlatformerControls), With<Rollback>>,
     gravity: Res<Gravity>,
 ) {
-    for (mut vel, controls) in query.iter_mut() {
+    for (mut vel, grounded, controls) in query.iter_mut() {
         // just set horizontal velocity for now
         // this totally overwrites any velocity on the x axis, which might not be ideal...
         vel.0.x = controls.horizontal * MAX_SPEED;
 
-        if controls.accel > 0. {
+        if controls.accel > 0. && grounded.0 {
             // todo: ground check + only trigger on press
             let v0 = f32::sqrt(-2. * JUMP_HEIGHT * gravity.0.y);
             vel.0.y = controls.accel * v0;
