@@ -7,9 +7,11 @@ pub struct Gravity(pub Vec2);
 
 impl Default for Gravity {
     fn default() -> Self {
-        // For real-world gravity, we should probably tweak this, though.
-        // Maybe even have per object gravity?
-        Self(Vec2::new(0., -9.81 * PIXELS_PER_METER))
+        // For real-world gravity,
+        // we should probably tweak this, though. Maybe even have per object gravity?
+        // Self(Vec2::new(0., -9.81 * PIXELS_PER_METER))
+        Self(Vec2::new(0., -9.81 * PIXELS_PER_METER * 4.0))
+        // TODO: maybe derive from hangtime as suggested in: https://www.youtube.com/watch?v=hG9SzQxaCm8
     }
 }
 

@@ -12,11 +12,14 @@ use menu::{
     connect::{create_matchbox_socket, update_matchbox_socket},
     online::{update_lobby_btn, update_lobby_id, update_lobby_id_display},
 };
-use physics::prelude::*;
+use physics::{
+    components::{PrevPos, Vel},
+    prelude::*,
+};
 use physics::{create_physics_stage, PhysicsUpdateStage};
 use round::{
     apply_inputs, check_win, increase_frame_count, move_players, print_p2p_events, setup_round,
-    spawn_players, update_velocity, FrameCount, Velocity,
+    spawn_players, FrameCount,
 };
 
 const NUM_PLAYERS: usize = 2;
@@ -47,7 +50,6 @@ pub enum AppState {
 #[derive(SystemLabel, Debug, Clone, Hash, Eq, PartialEq)]
 enum SystemLabel {
     Input,
-    Velocity,
 }
 
 #[derive(AssetCollection)]
@@ -83,7 +85,10 @@ fn main() {
         .with_update_frequency(FPS)
         .with_input_system(round::input)
         .register_rollback_type::<Transform>()
-        .register_rollback_type::<Velocity>()
+        // .register_rollback_type::<Velocity>()
+        .register_rollback_type::<Pos>()
+        .register_rollback_type::<Vel>()
+        .register_rollback_type::<PrevPos>()
         .register_rollback_type::<FrameCount>()
         .register_rollback_type::<Checksum>()
         .with_rollback_schedule(
@@ -97,12 +102,7 @@ fn main() {
                     ROLLBACK_SYSTEMS,
                     SystemStage::parallel()
                         .with_system(apply_inputs.label(SystemLabel::Input))
-                        .with_system(
-                            update_velocity
-                                .label(SystemLabel::Velocity)
-                                .after(SystemLabel::Input),
-                        )
-                        .with_system(move_players.after(SystemLabel::Velocity))
+                        .with_system(move_players.after(SystemLabel::Input))
                         .with_system(increase_frame_count),
                 )
                 .with_stage_after(
@@ -114,9 +114,10 @@ fn main() {
         .build(&mut app);
 
     app.add_plugins(DefaultPlugins)
-        .add_plugin(PhysicsPlugin)
         .add_state(AppState::AssetLoading)
         .insert_resource(ClearColor(Color::rgb(0.8, 0.8, 0.8)))
+        // physics
+        .add_plugin(PhysicsPlugin)
         // main menu
         .add_system_set(SystemSet::on_enter(AppState::MenuMain).with_system(menu::main::setup_ui))
         .add_system_set(

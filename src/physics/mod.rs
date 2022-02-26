@@ -20,7 +20,7 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Gravity>()
             // .init_resource::<LoopState>() // todo: for substepping
-            // These resources are cleared at teh start of every physics frame, so they should be rollback safe
+            // These resources are cleared at the start of every physics frame, so they should be rollback safe
             // i.e. they do not need to be added as rollback resources.
             .init_resource::<CollisionPairs>()
             .init_resource::<Contacts>()
@@ -34,7 +34,8 @@ impl Plugin for PhysicsPlugin {
 pub mod prelude {
     pub use super::{
         bundle::*,
-        components::{BoxCollider, Pos},
+        components::{BoxCollider, Pos, Vel},
+        resources::Gravity,
         PhysicsPlugin,
     };
 }
@@ -67,7 +68,7 @@ pub fn create_physics_stage() -> SystemStage {
                 .label(Step::ComputeAabbs)
                 .before(Step::CollectCollisionPairs)
                 .with_system(update_aabb_box)
-                .with_system(update_aabb_circle),
+                .with_system(update_aabb_ball),
         )
         .with_system(
             collect_collision_pairs
@@ -86,10 +87,10 @@ pub fn create_physics_stage() -> SystemStage {
             SystemSet::new()
                 .label(Step::SolvePositions)
                 .after(Step::Integrate)
-                .with_system(solve_pos)
+                .with_system(solve_pos_ball_ball)
                 .with_system(solve_pos_box_box)
-                .with_system(solve_pos_statics)
-                .with_system(solve_pos_static_boxes)
+                .with_system(solve_pos_static_ball_ball)
+                .with_system(solve_pos_static_box_ball)
                 .with_system(solve_pos_static_box_box),
         )
         .with_system_set(

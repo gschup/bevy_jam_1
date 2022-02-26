@@ -1,4 +1,4 @@
-use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy::prelude::*;
 use bevy_ggrs::{Rollback, RollbackIdProvider, SessionType};
 use bytemuck::{Pod, Zeroable};
 use ggrs::{InputStatus, P2PSession, PlayerHandle};
@@ -22,14 +22,10 @@ const MAGENTA: Color = Color::rgb(0.9, 0.2, 0.2);
 const GREEN: Color = Color::rgb(0.35, 0.7, 0.35);
 const PLAYER_COLORS: [Color; 4] = [BLUE, ORANGE, MAGENTA, GREEN];
 
-const PLAYER_SIZE: f32 = 50.;
-const MOV_SPEED: f32 = 0.1;
-const ROT_SPEED: f32 = 0.05;
-const MAX_SPEED: f32 = 7.5;
-const FRICTION: f32 = 0.98;
-const DRIFT: f32 = 0.95;
+const PLAYER_SIZE: f32 = 24.;
+const MAX_SPEED: f32 = 50.;
+const JUMP_HEIGHT: f32 = 24.;
 const ARENA_SIZE: f32 = 720.0;
-const CUBE_SIZE: f32 = 0.2;
 const GROUND_LEVEL: f32 = -200.;
 
 #[repr(C)]
@@ -47,12 +43,9 @@ pub struct Player {
 pub struct RoundEntity;
 
 #[derive(Default, Reflect, Component)]
-pub struct Velocity(pub Vec2);
-
-#[derive(Default, Reflect, Component)]
-pub struct CarControls {
+pub struct PlatformerControls {
     accel: f32,
-    steer: f32,
+    horizontal: f32,
 }
 
 #[derive(Default, Reflect, Hash, Component)]
@@ -104,6 +97,7 @@ pub fn setup_round(mut commands: Commands) {
     commands
         .spawn_bundle(OrthographicCameraBundle::new_2d())
         .insert(RoundEntity);
+
     // commands
     //     .spawn_bundle(SpriteBundle {
     //         transform: Transform::from_xyz(0., 0., 0.),
@@ -136,22 +130,23 @@ pub fn setup_round(mut commands: Commands) {
             ..Default::default()
         });
 
-    // Add a falling box to see that physics are working
-    let box_size = Vec2::new(24., 24.);
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: BLUE,
-                custom_size: Some(box_size),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert_bundle(DynamicBoxBundle {
-            pos: Pos(Vec2::new(0., 0.)),
-            collider: BoxCollider { size: box_size },
-            ..Default::default()
-        });
+    // // Add a falling box to see that physics are working
+    // let box_size = Vec2::new(24., 24.);
+    // commands
+    //     .spawn_bundle(SpriteBundle {
+    //         sprite: Sprite {
+    //             color: BLUE,
+    //             custom_size: Some(box_size),
+    //             ..Default::default()
+    //         },
+    //         ..Default::default()
+    //     })
+    //     .insert_bundle(DynamicBoxBundle {
+    //         pos: Pos(Vec2::new(0., 0.)),
+    //         collider: BoxCollider { size: box_size },
+    //         ..Default::default()
+    //     });
+    //     // todo: add rollback entity
 }
 
 pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
@@ -165,19 +160,25 @@ pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>
         let mut transform = Transform::from_translation(Vec3::new(x, y, 1.));
         transform.rotate(Quat::from_rotation_z(rot));
 
+        let player_size = Vec2::new(PLAYER_SIZE / 2., PLAYER_SIZE);
+
         commands
             .spawn_bundle(SpriteBundle {
                 transform,
                 sprite: Sprite {
                     color: PLAYER_COLORS[handle],
-                    custom_size: Some(Vec2::new(PLAYER_SIZE * 0.5, PLAYER_SIZE)),
+                    custom_size: Some(player_size),
                     ..Default::default()
                 },
                 ..Default::default()
             })
+            .insert_bundle(DynamicBoxBundle {
+                pos: Pos(Vec2::new(0., 0.)),
+                collider: BoxCollider { size: player_size },
+                ..Default::default()
+            })
             .insert(Player { handle })
-            .insert(Velocity::default())
-            .insert(CarControls::default())
+            .insert(PlatformerControls::default())
             .insert(Checksum::default())
             .insert(Rollback::new(rip.next_id()))
             .insert(RoundEntity);
@@ -221,8 +222,9 @@ pub fn increase_frame_count(mut frame_count: ResMut<FrameCount>) {
     frame_count.frame += 1;
 }
 
+/// Needs to happen before all systems that use PlatformerControls, or it will desync
 pub fn apply_inputs(
-    mut query: Query<(&mut CarControls, &Player)>,
+    mut query: Query<(&mut PlatformerControls, &Player)>,
     inputs: Res<Vec<(Input, InputStatus)>>,
 ) {
     for (mut c, p) in query.iter_mut() {
@@ -232,16 +234,16 @@ pub fn apply_inputs(
             InputStatus::Disconnected => 0, // disconnected players do nothing
         };
 
-        c.steer = if input & INPUT_LEFT != 0 && input & INPUT_RIGHT == 0 {
-            1.
+        c.horizontal = if input & INPUT_LEFT != 0 && input & INPUT_RIGHT == 0 {
+            -1. // right positive
         } else if input & INPUT_LEFT == 0 && input & INPUT_RIGHT != 0 {
-            -1.
+            1.
         } else {
             0.
         };
 
         c.accel = if input & INPUT_DOWN != 0 && input & INPUT_UP == 0 {
-            -1.
+            -1. // up positive
         } else if input & INPUT_DOWN == 0 && input & INPUT_UP != 0 {
             1.
         } else {
@@ -250,51 +252,26 @@ pub fn apply_inputs(
     }
 }
 
-pub fn update_velocity(mut query: Query<(&Transform, &mut Velocity, &CarControls)>) {
-    for (t, mut v, c) in query.iter_mut() {
-        let vel = &mut v.0;
-        let up = t.up().xy();
-        let right = t.right().xy();
+pub fn move_players(
+    mut query: Query<(&mut Vel, &PlatformerControls), With<Rollback>>,
+    gravity: Res<Gravity>,
+) {
+    for (mut vel, controls) in query.iter_mut() {
+        // just set horizontal velocity for now
+        // this totally overwrites any velocity on the x axis, which might not be ideal...
+        vel.0.x = controls.horizontal * MAX_SPEED;
 
-        // car drives forward / backward
-        *vel += (c.accel * MOV_SPEED) * up;
-
-        // very realistic tire friction
-        let forward_vel = up * vel.dot(up);
-        let right_vel = right * vel.dot(right);
-
-        *vel = forward_vel + right_vel * DRIFT;
-        if c.accel.abs() <= 0.0 {
-            *vel *= FRICTION;
+        if controls.accel > 0. {
+            // todo: ground check + only trigger on press
+            let v0 = f32::sqrt(-2. * JUMP_HEIGHT * gravity.0.y);
+            vel.0.y = controls.accel * v0;
+            // vel.0.y = controls.accel * MAX_SPEED;
         }
 
-        // constrain velocity
-        *vel = vel.clamp_length_max(MAX_SPEED);
-    }
-}
-
-pub fn move_players(mut query: Query<(&mut Transform, &Velocity, &CarControls), With<Rollback>>) {
-    for (mut t, v, c) in query.iter_mut() {
-        let vel = &v.0;
-        let up = t.up().xy();
-
-        // rotate car
-        let rot_factor = (vel.length() / MAX_SPEED).clamp(0.0, 1.0); // cannot rotate while standing still
-        let rot = if vel.dot(up) >= 0.0 {
-            c.steer * ROT_SPEED * rot_factor
-        } else {
-            // negate rotation while driving backwards
-            c.steer * ROT_SPEED * rot_factor * -1.0
-        };
-        t.rotate(Quat::from_rotation_z(rot));
-
-        // apply velocity
-        t.translation.x += vel.x;
-        t.translation.y += vel.y;
-
-        // constrain cube to plane
-        let bounds = (ARENA_SIZE - CUBE_SIZE) * 0.5;
-        t.translation.x = t.translation.x.clamp(-bounds, bounds);
-        t.translation.y = t.translation.y.clamp(-bounds, bounds);
+        // todo: could just be added in the physics inner loop system
+        // // constrain cube to plane
+        // let bounds = (ARENA_SIZE - CUBE_SIZE) * 0.5;
+        // t.translation.x = t.translation.x.clamp(-bounds, bounds);
+        // t.translation.y = t.translation.y.clamp(-bounds, bounds);
     }
 }

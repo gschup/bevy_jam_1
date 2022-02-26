@@ -8,7 +8,7 @@ use super::resources::*;
 use super::COLLISION_PAIR_VEL_MARGIN_FACTOR;
 use bevy::prelude::*;
 
-pub fn update_aabb_circle(mut query: Query<(&mut Aabb, &Pos, &Vel, &CircleCollider)>) {
+pub fn update_aabb_ball(mut query: Query<(&mut Aabb, &Pos, &Vel, &CircleCollider)>) {
     for (mut aabb, pos, vel, circle) in query.iter_mut() {
         let margin = COLLISION_PAIR_VEL_MARGIN_FACTOR * vel.0.length();
         let half_extents = Vec2::splat(circle.radius + margin);
@@ -63,7 +63,7 @@ pub fn clear_contacts(mut contacts: ResMut<Contacts>, mut static_contacts: ResMu
     static_contacts.0.clear();
 }
 
-pub fn solve_pos(
+pub fn solve_pos_ball_ball(
     mut query: Query<(&mut Pos, &CircleCollider, &Mass)>,
     mut contacts: ResMut<Contacts>,
     collision_pairs: Res<CollisionPairs>,
@@ -120,7 +120,7 @@ pub fn solve_pos_box_box(
     }
 }
 
-pub fn solve_pos_statics(
+pub fn solve_pos_static_ball_ball(
     mut dynamics: Query<(Entity, &mut Pos, &CircleCollider), With<Mass>>,
     statics: Query<(Entity, &Pos, &CircleCollider), Without<Mass>>,
     mut contacts: ResMut<StaticContacts>,
@@ -139,7 +139,7 @@ pub fn solve_pos_statics(
     }
 }
 
-pub fn solve_pos_static_boxes(
+pub fn solve_pos_static_box_ball(
     mut dynamics: Query<(Entity, &mut Pos, &CircleCollider), With<Mass>>,
     statics: Query<(Entity, &Pos, &BoxCollider), Without<Mass>>,
     mut contacts: ResMut<StaticContacts>,
