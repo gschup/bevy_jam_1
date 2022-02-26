@@ -38,9 +38,9 @@ pub struct BoxCollider {
 }
 
 impl BoxCollider {
-    pub fn inertia_inv_from_mass_inv(&self, mass_inv: f32) -> f32 {
-        12. * mass_inv / self.size.length_squared()
-    }
+    // pub fn inertia_inv_from_mass_inv(&self, mass_inv: f32) -> f32 {
+    //     12. * mass_inv / self.size.length_squared()
+    // }
 }
 
 impl Default for BoxCollider {
