@@ -6,6 +6,7 @@ use ggrs::{InputStatus, P2PSession, PlayerHandle};
 use crate::{
     checksum::Checksum,
     menu::{connect::LocalHandles, win::MatchData},
+    physics::prelude::*,
     AppState, GGRSConfig, NUM_PLAYERS,
 };
 
@@ -96,7 +97,12 @@ pub fn input(
     Input { inp }
 }
 
-pub fn setup_round(mut commands: Commands) {
+pub fn setup_round(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    // todo: probably just use sprites instead?
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     commands.insert_resource(FrameCount::default());
     commands
         .spawn_bundle(OrthographicCameraBundle::new_2d())
@@ -112,6 +118,29 @@ pub fn setup_round(mut commands: Commands) {
             ..Default::default()
         })
         .insert(RoundEntity);
+
+    let blue = materials.add(StandardMaterial {
+        base_color: Color::rgb(0.4, 0.4, 0.6),
+        unlit: true,
+        ..Default::default()
+    });
+
+    // level geometry
+
+    // todo: could import the body builder from bevy_xpbd to clean this up
+    let ground_size = Vec2::new(20., 2.);
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Quad::new(Vec2::ONE))),
+            material: blue,
+            transform: Transform::from_scale(ground_size.extend(1.)),
+            ..Default::default()
+        })
+        .insert_bundle(StaticBoxBundle {
+            pos: Pos(Vec2::new(0., -4.)),
+            collider: BoxCollider { size: ground_size },
+            ..Default::default()
+        });
 }
 
 pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {

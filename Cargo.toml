@@ -13,6 +13,7 @@ ggrs = { version = "0.9", features=["sync-send"] }
 bevy_ggrs = "0.9"
 matchbox_socket = { git = "https://github.com/johanhelsing/matchbox", features = ["ggrs-socket"] }
 log = "0.4"
+derive_more = "0.99"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 ggrs = {  version = "0.9", features=["sync-send", "wasm-bindgen"]}

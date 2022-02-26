@@ -1,5 +1,6 @@
 mod checksum;
 mod menu;
+mod physics;
 mod round;
 
 use bevy::prelude::*;
@@ -11,6 +12,8 @@ use menu::{
     connect::{create_matchbox_socket, update_matchbox_socket},
     online::{update_lobby_btn, update_lobby_id, update_lobby_id_display},
 };
+use physics::prelude::*;
+use physics::{create_physics_stage, PhysicsUpdateStage};
 use round::{
     apply_inputs, check_win, increase_frame_count, move_players, print_p2p_events, setup_round,
     spawn_players, update_velocity, FrameCount, Velocity,
@@ -85,7 +88,12 @@ fn main() {
         .register_rollback_type::<Checksum>()
         .with_rollback_schedule(
             Schedule::default()
-                .with_stage(
+                // adding physics in a separate stage for now,
+                // could perhaps merge with the stage below for increased parallelism...
+                // but this is a web jam game, so we don't *really* care about that now...
+                .with_stage(PhysicsUpdateStage, create_physics_stage())
+                .with_stage_after(
+                    PhysicsUpdateStage,
                     ROLLBACK_SYSTEMS,
                     SystemStage::parallel()
                         .with_system(apply_inputs.label(SystemLabel::Input))
@@ -106,6 +114,7 @@ fn main() {
         .build(&mut app);
 
     app.add_plugins(DefaultPlugins)
+        .add_plugin(PhysicsPlugin)
         .add_state(AppState::AssetLoading)
         // main menu
         .add_system_set(SystemSet::on_enter(AppState::MenuMain).with_system(menu::main::setup_ui))
