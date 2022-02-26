@@ -15,6 +15,7 @@ const INPUT_DOWN: u8 = 0b0010;
 const INPUT_LEFT: u8 = 0b0100;
 const INPUT_RIGHT: u8 = 0b1000;
 
+const GROUND: Color = Color::rgb(0.5, 0.5, 0.5);
 const BLUE: Color = Color::rgb(0.8, 0.6, 0.2);
 const ORANGE: Color = Color::rgb(0., 0.35, 0.8);
 const MAGENTA: Color = Color::rgb(0.9, 0.2, 0.2);
@@ -29,6 +30,7 @@ const FRICTION: f32 = 0.98;
 const DRIFT: f32 = 0.95;
 const ARENA_SIZE: f32 = 720.0;
 const CUBE_SIZE: f32 = 0.2;
+const GROUND_LEVEL: f32 = -200.;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Pod, Zeroable)]
@@ -97,48 +99,57 @@ pub fn input(
     Input { inp }
 }
 
-pub fn setup_round(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    // todo: probably just use sprites instead?
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
+pub fn setup_round(mut commands: Commands) {
     commands.insert_resource(FrameCount::default());
     commands
         .spawn_bundle(OrthographicCameraBundle::new_2d())
         .insert(RoundEntity);
-    commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform::from_xyz(0., 0., 0.),
-            sprite: Sprite {
-                color: Color::BLACK,
-                custom_size: Some(Vec2::new(ARENA_SIZE, ARENA_SIZE)),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(RoundEntity);
-
-    let blue = materials.add(StandardMaterial {
-        base_color: Color::rgb(0.4, 0.4, 0.6),
-        unlit: true,
-        ..Default::default()
-    });
+    // commands
+    //     .spawn_bundle(SpriteBundle {
+    //         transform: Transform::from_xyz(0., 0., 0.),
+    //         sprite: Sprite {
+    //             color: Color::BLACK,
+    //             custom_size: Some(Vec2::new(ARENA_SIZE, ARENA_SIZE)),
+    //             ..Default::default()
+    //         },
+    //         ..Default::default()
+    //     })
+    //     .insert(RoundEntity);
 
     // level geometry
 
     // todo: could import the body builder from bevy_xpbd to clean this up
-    let ground_size = Vec2::new(20., 2.);
+    let ground_size = Vec2::new(2000., 2000.); // should just be bigger than the screen
     commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Quad::new(Vec2::ONE))),
-            material: blue,
-            transform: Transform::from_scale(ground_size.extend(1.)),
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(ground_size),
+                color: GROUND,
+                ..Default::default()
+            },
+            // using transform for now, could probably just as well use custom size
             ..Default::default()
         })
         .insert_bundle(StaticBoxBundle {
-            pos: Pos(Vec2::new(0., -4.)),
+            pos: Pos(Vec2::new(0., -ground_size.y / 2. + GROUND_LEVEL)),
             collider: BoxCollider { size: ground_size },
+            ..Default::default()
+        });
+
+    // Add a falling box to see that physics are working
+    let box_size = Vec2::new(24., 24.);
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite {
+                color: BLUE,
+                custom_size: Some(box_size),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert_bundle(DynamicBoxBundle {
+            pos: Pos(Vec2::new(0., 0.)),
+            collider: BoxCollider { size: box_size },
             ..Default::default()
         });
 }
