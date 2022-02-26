@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 #[derive(Default, Component)]
-pub struct Player {
+pub struct Attacker {
     pub handle: usize,
 }
 
@@ -14,6 +14,35 @@ pub struct PlatformerControls {
     pub horizontal: f32,
 }
 
-#[derive(Component, Reflect, Default)]
+// the u16 counts the number of frames the attacker has been in that state
+#[derive(Clone, Copy, Component, Reflect, Debug)]
 #[reflect(Component)]
-pub struct Grounded(pub bool);
+pub enum AttackerState {
+    Idle(u16),
+    Jump(u16),
+    Fall(u16),
+    Land(u16),
+    Walk(u16),
+}
+
+impl AttackerState {
+    pub fn is_grounded(&self) -> bool {
+        match self {
+            AttackerState::Idle(..) | AttackerState::Land(..) | AttackerState::Walk(..) => true,
+            _ => false,
+        }
+    }
+
+    pub fn can_jump(&self) -> bool {
+        match self {
+            AttackerState::Idle(..) | AttackerState::Walk(..) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Default for AttackerState {
+    fn default() -> Self {
+        Self::Idle(0)
+    }
+}

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ggrs::Rollback;
 
-use crate::{physics::components::Vel, round::prelude::Player};
+use crate::{physics::components::Vel, round::prelude::Attacker};
 
 #[derive(Default, Reflect, Hash, Component)]
 #[reflect(Hash)]
@@ -10,7 +10,7 @@ pub struct Checksum {
 }
 
 pub fn checksum_players(
-    mut query: Query<(&Transform, &Vel, &mut Checksum), (With<Player>, With<Rollback>)>,
+    mut query: Query<(&Transform, &Vel, &mut Checksum), (With<Attacker>, With<Rollback>)>,
 ) {
     for (t, v, mut checksum) in query.iter_mut() {
         let mut bytes = Vec::with_capacity(20);

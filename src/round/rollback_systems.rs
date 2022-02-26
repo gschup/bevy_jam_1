@@ -13,32 +13,79 @@ pub fn increase_frame_count(mut frame_count: ResMut<FrameCount>) {
     frame_count.frame += 1;
 }
 
+const IDLE_THRESH: f32 = 0.01;
+const LAND_FRAMES: u16 = 3;
 /// Needs to happen before input
-pub fn ground_check(
+pub fn update_attacker_state(
     // todo: would maybe be cleaner to just expose one resource, that includes dynamics as well
     // just check against statics (ground) for now
     contacts: ResMut<StaticContacts>,
-    mut query: Query<&mut Grounded>,
+    mut query: Query<(Entity, &Vel, &mut AttackerState)>,
 ) {
-    // just clear existing state
-    for mut grounded in query.iter_mut() {
-        grounded.0 = false
-    }
-
-    for (dynamic_entity, _, normal) in contacts.0.iter() {
-        // The normal points from the dynamic entity to the static entity
-        // so a negative y means we're standing on top of the other collider
-        if normal.y < 0. {
-            if let Ok(mut grounded) = query.get_mut(*dynamic_entity) {
-                grounded.0 = true;
+    for (id, vel, mut state) in query.iter_mut() {
+        match *state {
+            AttackerState::Idle(ref mut f) => {
+                if vel.0.y < 0. {
+                    *state = AttackerState::Fall(0);
+                    continue;
+                }
+                if vel.0.y > 0. {
+                    *state = AttackerState::Jump(0);
+                    continue;
+                }
+                if vel.0.x.abs() > IDLE_THRESH {
+                    *state = AttackerState::Walk(0);
+                    continue;
+                }
+                *f += 1;
             }
-        }
+            AttackerState::Jump(ref mut f) => {
+                if vel.0.y < 0. {
+                    *state = AttackerState::Fall(0);
+                    continue;
+                }
+                *f += 1;
+            }
+            AttackerState::Fall(ref mut f) => {
+                if let Some(_) = contacts.0.iter().find(|(e, _, n)| *e == id && n.y < 0.) {
+                    *state = AttackerState::Land(0);
+                    continue;
+                }
+                *f += 1;
+            }
+            AttackerState::Land(ref mut f) => {
+                if vel.0.y < 0. {
+                    *state = AttackerState::Fall(0);
+                    continue;
+                }
+                if *f > LAND_FRAMES {
+                    *state = AttackerState::Idle(0);
+                    continue;
+                }
+                *f += 1;
+            }
+            AttackerState::Walk(ref mut f) => {
+                if vel.0.y < 0. {
+                    *state = AttackerState::Fall(0);
+                    continue;
+                }
+                if vel.0.y > 0. {
+                    *state = AttackerState::Jump(0);
+                    continue;
+                }
+                if vel.0.x.abs() < IDLE_THRESH {
+                    *state = AttackerState::Idle(0);
+                    continue;
+                }
+                *f += 1;
+            }
+        };
     }
 }
 
 /// Needs to happen before all systems that use PlatformerControls, or it will desync
 pub fn apply_inputs(
-    mut query: Query<(&mut PlatformerControls, &Player)>,
+    mut query: Query<(&mut PlatformerControls, &Attacker)>,
     inputs: Res<Vec<(Input, InputStatus)>>,
 ) {
     for (mut c, p) in query.iter_mut() {
@@ -67,16 +114,15 @@ pub fn apply_inputs(
 }
 
 pub fn move_players(
-    mut query: Query<(&mut Vel, &Grounded, &PlatformerControls), With<Rollback>>,
+    mut query: Query<(&mut Vel, &AttackerState, &PlatformerControls), With<Rollback>>,
     gravity: Res<Gravity>,
 ) {
-    for (mut vel, grounded, controls) in query.iter_mut() {
+    for (mut vel, state, controls) in query.iter_mut() {
         // just set horizontal velocity for now
         // this totally overwrites any velocity on the x axis, which might not be ideal...
         vel.0.x = controls.horizontal * MAX_SPEED;
 
-        if controls.accel > 0. && grounded.0 {
-            // todo: ground check + only trigger on press
+        if controls.accel > 0. && state.can_jump() {
             let v0 = f32::sqrt(-2. * JUMP_HEIGHT * gravity.0.y);
             vel.0.y = controls.accel * v0;
             // vel.0.y = controls.accel * MAX_SPEED;

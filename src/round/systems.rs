@@ -137,9 +137,9 @@ pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>
                 collider: BoxCollider { size: player_size },
                 ..Default::default()
             })
-            .insert(Player { handle })
+            .insert(Attacker { handle })
+            .insert(AttackerState::Idle(0))
             .insert(PlatformerControls::default())
-            .insert(Grounded::default())
             .insert(Checksum::default())
             .insert(Rollback::new(rip.next_id()))
             .insert(RoundEntity);

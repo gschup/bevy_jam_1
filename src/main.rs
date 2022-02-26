@@ -46,7 +46,7 @@ pub enum AppState {
 
 #[derive(SystemLabel, Debug, Clone, Hash, Eq, PartialEq)]
 enum SystemLabel {
-    GroundCheck,
+    UpdateState,
     Input,
 }
 
@@ -82,6 +82,7 @@ fn main() {
     GGRSPlugin::<GGRSConfig>::new()
         .with_update_frequency(FPS)
         .with_input_system(input)
+        .register_rollback_type::<AttackerState>()
         .register_rollback_type::<Transform>()
         // .register_rollback_type::<Velocity>()
         .register_rollback_type::<Pos>()
@@ -99,11 +100,11 @@ fn main() {
                     PhysicsUpdateStage,
                     ROLLBACK_SYSTEMS,
                     SystemStage::parallel()
-                        .with_system(ground_check.label(SystemLabel::GroundCheck))
+                        .with_system(update_attacker_state.label(SystemLabel::UpdateState))
                         .with_system(
                             apply_inputs
                                 .label(SystemLabel::Input)
-                                .after(SystemLabel::GroundCheck),
+                                .after(SystemLabel::UpdateState),
                         )
                         .with_system(move_players.after(SystemLabel::Input))
                         .with_system(increase_frame_count),
