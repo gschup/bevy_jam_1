@@ -116,6 +116,7 @@ fn main() {
     app.add_plugins(DefaultPlugins)
         .add_plugin(PhysicsPlugin)
         .add_state(AppState::AssetLoading)
+        .insert_resource(ClearColor(Color::rgb(0.8, 0.8, 0.8)))
         // main menu
         .add_system_set(SystemSet::on_enter(AppState::MenuMain).with_system(menu::main::setup_ui))
         .add_system_set(
