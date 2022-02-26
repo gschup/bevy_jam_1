@@ -16,8 +16,8 @@ const INPUT_LEFT: u8 = 0b0100;
 const INPUT_RIGHT: u8 = 0b1000;
 
 const GROUND: Color = Color::rgb(0.5, 0.5, 0.5);
-const BLUE: Color = Color::rgb(0.8, 0.6, 0.2);
-const ORANGE: Color = Color::rgb(0., 0.35, 0.8);
+const ORANGE: Color = Color::rgb(0.8, 0.6, 0.2);
+const BLUE: Color = Color::rgb(0., 0.35, 0.8);
 const MAGENTA: Color = Color::rgb(0.9, 0.2, 0.2);
 const GREEN: Color = Color::rgb(0.35, 0.7, 0.35);
 const PLAYER_COLORS: [Color; 4] = [BLUE, ORANGE, MAGENTA, GREEN];
