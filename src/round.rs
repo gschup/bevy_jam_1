@@ -26,7 +26,7 @@ const PLAYER_SIZE: f32 = 24.;
 const MAX_SPEED: f32 = 50.;
 const JUMP_HEIGHT: f32 = 24.;
 const ARENA_SIZE: f32 = 720.0;
-const GROUND_LEVEL: f32 = -200.;
+const GROUND_LEVEL: f32 = -100.;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Pod, Zeroable)]
@@ -94,9 +94,9 @@ pub fn input(
 
 pub fn setup_round(mut commands: Commands) {
     commands.insert_resource(FrameCount::default());
-    commands
-        .spawn_bundle(OrthographicCameraBundle::new_2d())
-        .insert(RoundEntity);
+    let mut cam = OrthographicCameraBundle::new_2d();
+    cam.orthographic_projection.scale = 1. / 2.; // Asset pixels are 2 times bigger than "device points"
+    commands.spawn_bundle(cam).insert(RoundEntity);
 
     // commands
     //     .spawn_bundle(SpriteBundle {

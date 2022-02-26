@@ -115,6 +115,8 @@ pub fn create_physics_stage() -> SystemStage {
 }
 
 // Stuff for substepping, if we enable that:
+// We'd want to enable substepping if we have issues with tunneling, or collisions feel too "spongy"
+// (it's pretty cheap, the expensive parts of the simulation only run once per frame)
 
 // #[derive(Debug, Default)]
 // struct LoopState {
