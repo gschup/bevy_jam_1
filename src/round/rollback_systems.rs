@@ -91,6 +91,7 @@ pub fn spawn_players(
             })
             .insert(Attacker { handle })
             .insert(AttackerState::Idle(0))
+            .insert(FacingDirection::Right)
             .insert(PlatformerControls::default())
             .insert(Checksum::default())
             .insert(Rollback::new(rip.next_id()))
@@ -116,9 +117,19 @@ pub fn update_attacker_state(
     // just check against statics (ground) for now
     contacts: ResMut<Contacts>,
     static_contacts: ResMut<StaticContacts>,
-    mut query: Query<(Entity, &Vel, &mut AttackerState)>,
+    mut query: Query<(Entity, &Vel, &mut AttackerState, &mut FacingDirection)>,
 ) {
-    for (id, vel, mut state) in query.iter_mut() {
+    for (id, vel, mut state, mut face_dir) in query.iter_mut() {
+        // update facing direction
+        if vel.0.x.is_sign_negative() && vel.0.x.abs() > IDLE_THRESH {
+            *face_dir = FacingDirection::Left;
+        }
+
+        if vel.0.x.is_sign_positive() && vel.0.x.abs() > IDLE_THRESH {
+            *face_dir = FacingDirection::Right;
+        }
+
+        //update state
         match *state {
             AttackerState::Idle(ref mut f) => {
                 if vel.0.y < -0.01 {

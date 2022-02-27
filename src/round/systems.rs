@@ -126,12 +126,13 @@ pub fn update_attacker_sprite(
     mut query: Query<(
         &mut TextureAtlasSprite,
         &mut Handle<TextureAtlas>,
+        &FacingDirection,
         &AttackerState,
     )>,
     sprites: Res<SpriteAssets>,
     texture_atlases: Res<Assets<TextureAtlas>>,
 ) {
-    for (mut sprite, mut atlas_handle, state) in query.iter_mut() {
+    for (mut sprite, mut atlas_handle, face_dir, state) in query.iter_mut() {
         match *state {
             AttackerState::Idle(_) => *atlas_handle = sprites.janitor_idle.clone(),
             AttackerState::Jump(_) => *atlas_handle = sprites.janitor_jump.clone(),
@@ -144,6 +145,10 @@ pub fn update_attacker_sprite(
             .get(atlas_handle.as_ref())
             .expect("TextureAtlas not found.");
         sprite.index = (state.get_frame() / FRAMES_PER_SPRITE) % texture_atlas.textures.len();
+        sprite.flip_x = match *face_dir {
+            FacingDirection::Left => true,
+            FacingDirection::Right => false,
+        }
     }
 }
 
