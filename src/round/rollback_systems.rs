@@ -138,11 +138,11 @@ pub fn update_attacker_state(
         //update state
         match *state {
             AttackerState::Idle(ref mut f) => {
-                if vel.0.y < -0.01 {
+                if vel.0.y < -IDLE_THRESH {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
-                if vel.0.y > 0.01 {
+                if vel.0.y > IDLE_THRESH {
                     *state = AttackerState::Jump(0);
                     continue;
                 }
@@ -153,7 +153,7 @@ pub fn update_attacker_state(
                 *f += 1;
             }
             AttackerState::Jump(ref mut f) => {
-                if vel.0.y < 0.01 {
+                if vel.0.y < IDLE_THRESH {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
@@ -180,7 +180,7 @@ pub fn update_attacker_state(
                 *f += 1;
             }
             AttackerState::Land(ref mut f) => {
-                if vel.0.y < -0.01 {
+                if vel.0.y < -IDLE_THRESH {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
@@ -191,15 +191,15 @@ pub fn update_attacker_state(
                 *f += 1;
             }
             AttackerState::Walk(ref mut f) => {
-                if vel.0.y < -0.01 {
+                if vel.0.y < -IDLE_THRESH {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
-                if vel.0.y > 0.01 {
+                if vel.0.y > IDLE_THRESH {
                     *state = AttackerState::Jump(0);
                     continue;
                 }
-                if vel.0.x.abs() < IDLE_THRESH {
+                if contr.horizontal.abs() < IDLE_THRESH {
                     *state = AttackerState::Idle(0);
                     continue;
                 }
