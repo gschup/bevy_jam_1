@@ -229,16 +229,13 @@ fn main() {
         )
         .add_system_set(SystemSet::on_exit(AppState::Win).with_system(menu::win::cleanup_ui))
         // local round
-        .add_system_set(
-            SystemSet::on_enter(AppState::RoundLocal)
-                .with_system(setup_game)
-                .with_system(load_ldtk_level), // todo: maybe move?
-        )
+        .add_system_set(SystemSet::on_enter(AppState::RoundLocal).with_system(setup_game))
         .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
         // online round
         .add_system_set(SystemSet::on_enter(AppState::RoundOnline).with_system(setup_game))
         .add_system_set(SystemSet::on_update(AppState::RoundOnline).with_system(print_p2p_events))
-        .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game));
+        .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game))
+        .add_startup_system(load_ldtk_level);
 
     #[cfg(target_arch = "wasm32")]
     {
