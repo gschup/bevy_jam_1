@@ -109,6 +109,7 @@ pub fn print_p2p_events(mut session: ResMut<P2PSession<GGRSConfig>>) {
 }
 
 pub fn cleanup_game(query: Query<Entity, With<GameEntity>>, mut commands: Commands) {
+    commands.remove_resource::<RoundData>();
     commands.remove_resource::<FrameCount>();
     commands.remove_resource::<LocalHandles>();
     commands.remove_resource::<P2PSession<GGRSConfig>>();

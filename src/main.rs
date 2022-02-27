@@ -14,16 +14,21 @@ use menu::{
     online::{update_lobby_btn, update_lobby_id, update_lobby_id_display},
 };
 use physics::{
+    components::{Aabb, Mass, PreSolveVel, Restitution},
+    create_physics_stage,
+};
+use physics::{
     components::{PrevPos, Vel},
     prelude::*,
 };
-use physics::{create_physics_stage, PhysicsUpdateStage};
 use round::prelude::*;
+
+const ROLLBACK_SYSTEMS: &str = "rollback_systems";
+const CHECKSUM_UPDATE: &str = "checksum_update";
+const PHYSICS_UPDATE: &str = "physics_update";
 
 const NUM_PLAYERS: usize = 1;
 const FPS: usize = 60;
-const ROLLBACK_SYSTEMS: &str = "rollback_systems";
-const CHECKSUM_UPDATE: &str = "checksum_update";
 const MAX_PREDICTION: usize = 12;
 const INPUT_DELAY: usize = 2;
 const CHECK_DISTANCE: usize = 2;
@@ -91,6 +96,11 @@ fn main() {
         .register_rollback_type::<Pos>()
         .register_rollback_type::<Vel>()
         .register_rollback_type::<PrevPos>()
+        .register_rollback_type::<PreSolveVel>()
+        .register_rollback_type::<Restitution>()
+        .register_rollback_type::<BoxCollider>()
+        .register_rollback_type::<Mass>()
+        .register_rollback_type::<Aabb>()
         .register_rollback_type::<FrameCount>()
         .register_rollback_type::<Checksum>()
         .register_rollback_type::<RoundState>()
@@ -100,9 +110,9 @@ fn main() {
                 // adding physics in a separate stage for now,
                 // could perhaps merge with the stage below for increased parallelism...
                 // but this is a web jam game, so we don't *really* care about that now...
-                .with_stage(PhysicsUpdateStage, create_physics_stage())
+                .with_stage(PHYSICS_UPDATE, create_physics_stage())
                 .with_stage_after(
-                    PhysicsUpdateStage,
+                    PHYSICS_UPDATE,
                     ROLLBACK_SYSTEMS,
                     SystemStage::parallel()
                         // interlude start
