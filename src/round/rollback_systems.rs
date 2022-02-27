@@ -99,7 +99,7 @@ pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>
 pub fn start_round(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
     frame_count.frame = 0;
     *state = RoundState::Round;
-    //println!("ROUND START");
+    //println!("\nROUND START");
 }
 
 /*
@@ -251,7 +251,7 @@ pub fn check_round_end(mut frame_count: ResMut<FrameCount>, mut round_state: Res
         *round_state = RoundState::RoundEnd;
     }
 
-    //println!("ROUND {}", frame_count.frame);
+    //println!("\nROUND {}", frame_count.frame);
 }
 
 /*
@@ -286,5 +286,5 @@ pub fn cleanup_round(
         // start another round
         *round_state = RoundState::InterludeStart;
     }
-    //println!("ROUND END {:?}", round_data);
+    //println!("\nROUND END {:?}", *round_data);
 }

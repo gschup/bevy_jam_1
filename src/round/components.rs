@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 
-#[derive(Default, Component)]
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Attacker {
     pub handle: usize,
 }
 
 // cleaned up after every round
-#[derive(Component)]
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct RoundEntity;
 
 // cleaned up after the game
@@ -14,6 +16,7 @@ pub struct RoundEntity;
 pub struct GameEntity;
 
 #[derive(Default, Reflect, Component)]
+#[reflect(Component)]
 pub struct PlatformerControls {
     pub accel: f32,
     pub horizontal: f32,

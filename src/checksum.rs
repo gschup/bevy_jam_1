@@ -9,14 +9,11 @@ pub struct Checksum {
     value: u16,
 }
 
-pub fn checksum_players(
-    mut query: Query<
-        (&Rollback, &Transform, &Vel, &mut Checksum),
-        (With<Attacker>, With<Rollback>),
-    >,
+pub fn checksum_attackers(
+    mut query: Query<(&Transform, &Vel, &mut Checksum), (With<Attacker>, With<Rollback>)>,
 ) {
-    for (_id, t, v, mut checksum) in query.iter_mut() {
-        //println!("Player {}: {:?}, {:?}", _id.id(), t.translation, &v.0);
+    for (t, v, mut checksum) in query.iter_mut() {
+        //println!("Attacker {:?}, {:?}", t.translation, v.0);
         let mut bytes = Vec::with_capacity(20);
         bytes.extend_from_slice(&t.translation.x.to_le_bytes());
         bytes.extend_from_slice(&t.translation.y.to_le_bytes());

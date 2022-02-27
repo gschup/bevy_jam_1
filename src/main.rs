@@ -6,7 +6,7 @@ mod round;
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 use bevy_ggrs::GGRSPlugin;
-use checksum::{checksum_players, Checksum};
+use checksum::{checksum_attackers, Checksum};
 use ggrs::Config;
 use menu::{
     connect::{create_matchbox_socket, update_matchbox_socket},
@@ -19,7 +19,7 @@ use physics::{
 use physics::{create_physics_stage, PhysicsUpdateStage};
 use round::prelude::*;
 
-const NUM_PLAYERS: usize = 2;
+const NUM_PLAYERS: usize = 1;
 const FPS: usize = 60;
 const ROLLBACK_SYSTEMS: &str = "rollback_systems";
 const CHECKSUM_UPDATE: &str = "checksum_update";
@@ -83,6 +83,8 @@ fn main() {
     GGRSPlugin::<GGRSConfig>::new()
         .with_update_frequency(FPS)
         .with_input_system(input)
+        .register_rollback_type::<Attacker>()
+        .register_rollback_type::<RoundEntity>()
         .register_rollback_type::<AttackerState>()
         .register_rollback_type::<Transform>()
         .register_rollback_type::<Pos>()
@@ -97,10 +99,7 @@ fn main() {
                 // adding physics in a separate stage for now,
                 // could perhaps merge with the stage below for increased parallelism...
                 // but this is a web jam game, so we don't *really* care about that now...
-                .with_stage(
-                    PhysicsUpdateStage,
-                    create_physics_stage().with_run_criteria(on_round), // only run physics when the round runs
-                )
+                .with_stage(PhysicsUpdateStage, create_physics_stage())
                 .with_stage_after(
                     PhysicsUpdateStage,
                     ROLLBACK_SYSTEMS,
@@ -158,7 +157,7 @@ fn main() {
                 .with_stage_after(
                     ROLLBACK_SYSTEMS,
                     CHECKSUM_UPDATE,
-                    SystemStage::parallel().with_system(checksum_players),
+                    SystemStage::parallel().with_system(checksum_attackers),
                 ),
         )
         .build(&mut app);
