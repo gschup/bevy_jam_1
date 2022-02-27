@@ -17,11 +17,12 @@ impl Default for Gravity {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Component, Reflect, Default, Debug, Hash)]
+#[reflect(Hash)]
 pub struct CollisionPairs(pub Vec<(Entity, Entity)>);
 
-#[derive(Default, Debug)]
+#[derive(Component, Reflect, Default, Debug)]
 pub struct Contacts(pub Vec<(Entity, Entity, Vec2)>);
 
-#[derive(Default, Debug)]
+#[derive(Component, Reflect, Default, Debug)]
 pub struct StaticContacts(pub Vec<(Entity, Entity, Vec2)>);

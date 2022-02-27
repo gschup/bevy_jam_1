@@ -10,11 +10,15 @@ pub enum MenuWinBtn {
     Back,
 }
 
-pub struct MatchData {
+pub struct MatchResult {
     pub result: String,
 }
 
-pub fn setup_ui(mut commands: Commands, match_data: Res<MatchData>, font_assets: Res<FontAssets>) {
+pub fn setup_ui(
+    mut commands: Commands,
+    match_data: Res<MatchResult>,
+    font_assets: Res<FontAssets>,
+) {
     // ui camera
     commands
         .spawn_bundle(UiCameraBundle::default())
@@ -87,7 +91,7 @@ pub fn setup_ui(mut commands: Commands, match_data: Res<MatchData>, font_assets:
         })
         .insert(WinUI);
 
-    commands.remove_resource::<MatchData>();
+    commands.remove_resource::<MatchResult>();
 }
 
 pub fn btn_visuals(

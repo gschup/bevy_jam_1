@@ -1,14 +1,22 @@
 use bevy::prelude::*;
 
-#[derive(Default, Component)]
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Attacker {
     pub handle: usize,
 }
 
-#[derive(Component)]
+// cleaned up after every round
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct RoundEntity;
 
+// cleaned up after the game
+#[derive(Component)]
+pub struct GameEntity;
+
 #[derive(Default, Reflect, Component)]
+#[reflect(Component)]
 pub struct PlatformerControls {
     pub accel: f32,
     pub horizontal: f32,
@@ -18,14 +26,15 @@ pub struct PlatformerControls {
 #[derive(Clone, Copy, Component, Reflect, Debug)]
 #[reflect(Component)]
 pub enum AttackerState {
-    Idle(u16),
-    Jump(u16),
-    Fall(u16),
-    Land(u16),
-    Walk(u16),
+    Idle(usize),
+    Jump(usize),
+    Fall(usize),
+    Land(usize),
+    Walk(usize),
 }
 
 impl AttackerState {
+    #[allow(dead_code)]
     pub fn is_grounded(&self) -> bool {
         match self {
             AttackerState::Idle(..) | AttackerState::Land(..) | AttackerState::Walk(..) => true,
@@ -37,6 +46,16 @@ impl AttackerState {
         match self {
             AttackerState::Idle(..) | AttackerState::Walk(..) => true,
             _ => false,
+        }
+    }
+
+    pub fn get_frame(&self) -> usize {
+        match self {
+            AttackerState::Idle(f) => *f,
+            AttackerState::Jump(f) => *f,
+            AttackerState::Fall(f) => *f,
+            AttackerState::Land(f) => *f,
+            AttackerState::Walk(f) => *f,
         }
     }
 }

@@ -57,11 +57,12 @@ pub struct Pos(pub Vec2);
 #[reflect(Component)]
 pub struct PrevPos(pub Vec2);
 
-#[derive(Component, Reflect, Debug, Default)]
+#[derive(Component, Reflect, Clone, Copy, Debug, Default)]
 #[reflect(Component)]
 pub struct Vel(pub(crate) Vec2);
 
-#[derive(Component, Debug, Default)]
+#[derive(Component, Reflect, Debug, Default)]
+#[reflect(Component)]
 pub struct PreSolveVel(pub(crate) Vec2);
 
 #[derive(Component, Reflect, Debug, Clone, Copy, From)]
@@ -74,7 +75,8 @@ impl Default for Mass {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Reflect, Debug)]
+#[reflect(Component)]
 pub struct Restitution(pub f32);
 
 impl Default for Restitution {

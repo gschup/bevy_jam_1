@@ -1,20 +1,115 @@
 use bevy::prelude::*;
-use bevy_ggrs::Rollback;
+use bevy_ggrs::{Rollback, RollbackIdProvider};
 use ggrs::InputStatus;
 
 use crate::{
+    checksum::Checksum,
+    menu::win::MatchResult,
     physics::prelude::*,
     round::{prelude::*, resources::Input},
+    AppState, SpriteAssets, NUM_PLAYERS,
 };
 
-use super::{INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED};
+use super::{
+    GROUND, GROUND_LEVEL, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED,
+    NUM_ROUNDS, PLAYER_SIZE,
+};
 
-pub fn increase_frame_count(mut frame_count: ResMut<FrameCount>) {
-    frame_count.frame += 1;
+const INTERLUDE_LENGTH: u32 = 60;
+const ROUND_LENGTH: u32 = 600;
+
+/*
+ * INTERLUDE
+ */
+
+pub fn setup_interlude(mut state: ResMut<RoundState>) {
+    *state = RoundState::Interlude;
+    //println!("INTERLUDE_START");
 }
 
+pub fn run_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
+    frame_count.frame += 1;
+    if frame_count.frame >= INTERLUDE_LENGTH {
+        *state = RoundState::InterludeEnd;
+    }
+    // println!("INTERLUDE {}", frame_count.frame);
+}
+
+pub fn cleanup_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
+    frame_count.frame = 0;
+    *state = RoundState::RoundStart;
+    // println!("INTERLUDE_END");
+}
+
+/*
+ * ROUND START
+ */
+
+pub fn spawn_world(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
+    // todo: could import the body builder from bevy_xpbd to clean this up
+    let ground_size = Vec2::new(2000., 2000.); // should just be bigger than the screen
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(ground_size),
+                color: GROUND,
+                ..Default::default()
+            },
+            // using transform for now, could probably just as well use custom size
+            ..Default::default()
+        })
+        .insert_bundle(StaticBoxBundle {
+            pos: Pos(Vec2::new(0., -ground_size.y / 2. + GROUND_LEVEL)),
+            collider: BoxCollider { size: ground_size },
+            ..Default::default()
+        })
+        .insert(Rollback::new(rip.next_id()))
+        .insert(RoundEntity);
+}
+
+pub fn spawn_players(
+    mut commands: Commands,
+    mut rip: ResMut<RollbackIdProvider>,
+    sprites: Res<SpriteAssets>,
+) {
+    for handle in 0..NUM_PLAYERS {
+        let x = (2. * handle as f32 - 1.) * 20.;
+        let y = 0.;
+        commands
+            .spawn_bundle(SpriteSheetBundle {
+                transform: Transform::from_xyz(x, y, 1.),
+                sprite: TextureAtlasSprite::new(0),
+                texture_atlas: sprites.janitor_idle.clone(),
+                ..Default::default()
+            })
+            .insert_bundle(DynamicBoxBundle {
+                pos: Pos(Vec2::new(x, y)),
+                collider: BoxCollider {
+                    size: Vec2::new(PLAYER_SIZE / 2., PLAYER_SIZE),
+                },
+                ..Default::default()
+            })
+            .insert(Attacker { handle })
+            .insert(AttackerState::Idle(0))
+            .insert(PlatformerControls::default())
+            .insert(Checksum::default())
+            .insert(Rollback::new(rip.next_id()))
+            .insert(RoundEntity);
+    }
+}
+
+pub fn start_round(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
+    frame_count.frame = 0;
+    *state = RoundState::Round;
+    //println!("\nROUND START");
+}
+
+/*
+ * ROUND UPDATE
+ */
+
 const IDLE_THRESH: f32 = 0.01;
-const LAND_FRAMES: u16 = 3;
+const LAND_FRAMES: usize = 3;
 /// Needs to happen before input
 pub fn update_attacker_state(
     // todo: would maybe be cleaner to just expose one resource, that includes dynamics as well
@@ -148,4 +243,50 @@ pub fn move_players(
         // t.translation.x = t.translation.x.clamp(-bounds, bounds);
         // t.translation.y = t.translation.y.clamp(-bounds, bounds);
     }
+}
+
+pub fn check_round_end(mut frame_count: ResMut<FrameCount>, mut round_state: ResMut<RoundState>) {
+    frame_count.frame += 1;
+
+    // dummy win condition - game ends after ROUND_LENGTH frames
+    if frame_count.frame >= ROUND_LENGTH {
+        *round_state = RoundState::RoundEnd;
+    }
+
+    //println!("\nROUND {}", frame_count.frame);
+}
+
+/*
+ * ROUND END
+ */
+
+// despawns players and the world
+pub fn cleanup_round(
+    query: Query<Entity, With<RoundEntity>>,
+    mut frame_count: ResMut<FrameCount>,
+    mut round_state: ResMut<RoundState>,
+    mut round_data: ResMut<RoundData>,
+    mut app_state: ResMut<State<AppState>>,
+    mut commands: Commands,
+) {
+    for e in query.iter() {
+        commands.entity(e).despawn_recursive();
+    }
+
+    frame_count.frame = 0;
+    round_data.cur_round += 1; // update round information
+
+    if round_data.cur_round >= NUM_ROUNDS {
+        // go to win screen
+        match app_state.set(AppState::Win) {
+            Ok(_) => commands.insert_resource(MatchResult {
+                result: "TODO!".to_owned(), // TODO: should be created from the RoundData
+            }),
+            Err(e) => warn!("Could not change app state to AppState::Win : {}", e), // this happens when there is a rollback and the change to app win is queued twice
+        };
+    } else {
+        // start another round
+        *round_state = RoundState::InterludeStart;
+    }
+    //println!("\nROUND END {:?}", *round_data);
 }
