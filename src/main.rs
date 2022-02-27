@@ -5,6 +5,7 @@ mod round;
 
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
+use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::GGRSPlugin;
 use checksum::{checksum_attackers, Checksum};
 use ggrs::Config;
@@ -167,6 +168,8 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.8, 0.8, 0.8)))
         // physics
         .add_plugin(PhysicsPlugin)
+        .add_plugin(LdtkPlugin)
+        .insert_resource(LevelSelection::Index(0))
         // main menu
         .add_system_set(SystemSet::on_enter(AppState::MenuMain).with_system(menu::main::setup_ui))
         .add_system_set(
@@ -216,7 +219,11 @@ fn main() {
         )
         .add_system_set(SystemSet::on_exit(AppState::Win).with_system(menu::win::cleanup_ui))
         // local round
-        .add_system_set(SystemSet::on_enter(AppState::RoundLocal).with_system(setup_game))
+        .add_system_set(
+            SystemSet::on_enter(AppState::RoundLocal)
+                .with_system(setup_game)
+                .with_system(load_ldtk_level), // todo: maybe move?
+        )
         .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
         // online round
         .add_system_set(SystemSet::on_enter(AppState::RoundOnline).with_system(setup_game))

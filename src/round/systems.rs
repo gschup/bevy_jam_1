@@ -1,4 +1,5 @@
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
+use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::SessionType;
 use ggrs::{P2PSession, PlayerHandle};
 
@@ -116,4 +117,15 @@ pub fn cleanup_game(query: Query<Entity, With<GameEntity>>, mut commands: Comman
     for e in query.iter() {
         commands.entity(e).despawn_recursive();
     }
+}
+
+pub fn load_ldtk_level(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // todo: disable in release builds?
+    asset_server.watch_for_changes().unwrap();
+
+    let ldtk_handle = asset_server.load("levels/level.ldtk");
+    commands.spawn_bundle(LdtkWorldBundle {
+        ldtk_handle,
+        ..Default::default()
+    });
 }
