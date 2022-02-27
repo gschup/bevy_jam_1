@@ -48,6 +48,7 @@ enum SystemLabel {
     UpdateState,
     Input,
     Move,
+    End,
 }
 
 #[derive(AssetCollection)]
@@ -60,6 +61,29 @@ pub struct ImageAssets {
 pub struct FontAssets {
     #[asset(path = "fonts/FiraSans-Bold.ttf")]
     pub default_font: Handle<Font>,
+}
+
+#[derive(AssetCollection)]
+pub struct SpriteAssets {
+    // if the sheet would have padding, we could set that with `padding_x` and `padding_y`
+    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_idle.png")]
+    janitor_idle: Handle<TextureAtlas>,
+    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_walk.png")]
+    janitor_walk: Handle<TextureAtlas>,
+    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_fall.png")]
+    janitor_fall: Handle<TextureAtlas>,
+    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_jump.png")]
+    janitor_jump: Handle<TextureAtlas>,
+    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 1, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_land.png")]
+    janitor_land: Handle<TextureAtlas>,
+    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_hit.png")]
+    janitor_hit: Handle<TextureAtlas>,
 }
 
 #[derive(Debug)]
@@ -77,6 +101,7 @@ fn main() {
         .continue_to_state(AppState::MenuMain)
         .with_collection::<ImageAssets>()
         .with_collection::<FontAssets>()
+        .with_collection::<SpriteAssets>()
         .build(&mut app);
 
     GGRSPlugin::<GGRSConfig>::new()
@@ -86,7 +111,12 @@ fn main() {
         .register_rollback_type::<RoundEntity>()
         .register_rollback_type::<AttackerState>()
         .register_rollback_type::<PlatformerControls>()
+        .register_rollback_type::<FrameCount>()
+        .register_rollback_type::<Checksum>()
+        .register_rollback_type::<RoundState>()
+        .register_rollback_type::<RoundData>()
         .register_rollback_type::<Transform>()
+        // physics types
         .register_rollback_type::<Pos>()
         .register_rollback_type::<Vel>()
         .register_rollback_type::<PrevPos>()
@@ -95,10 +125,6 @@ fn main() {
         .register_rollback_type::<BoxCollider>()
         .register_rollback_type::<Mass>()
         .register_rollback_type::<Aabb>()
-        .register_rollback_type::<FrameCount>()
-        .register_rollback_type::<Checksum>()
-        .register_rollback_type::<RoundState>()
-        .register_rollback_type::<RoundData>()
         .register_rollback_type::<StaticContacts>()
         .register_rollback_type::<Contacts>()
         .with_rollback_schedule(
@@ -153,13 +179,15 @@ fn main() {
                                         .after(SystemLabel::Input),
                                 )
                                 .with_system(
-                                    check_round_end.label("end check").after(SystemLabel::Move),
+                                    check_round_end
+                                        .label(SystemLabel::End)
+                                        .after(SystemLabel::Move),
                                 ),
                         )
                         // round end
                         .with_system_set(
                             SystemSet::new()
-                                .after("end check")
+                                .after(SystemLabel::End)
                                 .with_run_criteria(on_round_end)
                                 .with_system(cleanup_round),
                         ),
@@ -229,12 +257,20 @@ fn main() {
         .add_system_set(SystemSet::on_exit(AppState::Win).with_system(menu::win::cleanup_ui))
         // local round
         .add_system_set(SystemSet::on_enter(AppState::RoundLocal).with_system(setup_game))
+        .add_system_set(
+            SystemSet::on_update(AppState::RoundLocal).with_system(update_attacker_sprite),
+        )
         .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
         // online round
         .add_system_set(SystemSet::on_enter(AppState::RoundOnline).with_system(setup_game))
-        .add_system_set(SystemSet::on_update(AppState::RoundOnline).with_system(print_p2p_events))
-        .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game))
-        .add_startup_system(load_ldtk_level);
+        .add_system_set(
+            SystemSet::on_update(AppState::RoundOnline)
+                .with_system(update_attacker_sprite)
+                .with_system(print_p2p_events),
+        )
+        .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game));
+    // ldtk loading TODO: move to assetLoader plugin?
+    //.add_startup_system(load_ldtk_level);
 
     #[cfg(target_arch = "wasm32")]
     {

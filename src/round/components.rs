@@ -26,11 +26,11 @@ pub struct PlatformerControls {
 #[derive(Clone, Copy, Component, Reflect, Debug)]
 #[reflect(Component)]
 pub enum AttackerState {
-    Idle(u16),
-    Jump(u16),
-    Fall(u16),
-    Land(u16),
-    Walk(u16),
+    Idle(usize),
+    Jump(usize),
+    Fall(usize),
+    Land(usize),
+    Walk(usize),
 }
 
 impl AttackerState {
@@ -46,6 +46,16 @@ impl AttackerState {
         match self {
             AttackerState::Idle(..) | AttackerState::Walk(..) => true,
             _ => false,
+        }
+    }
+
+    pub fn get_frame(&self) -> usize {
+        match self {
+            AttackerState::Idle(f) => *f,
+            AttackerState::Jump(f) => *f,
+            AttackerState::Fall(f) => *f,
+            AttackerState::Land(f) => *f,
+            AttackerState::Walk(f) => *f,
         }
     }
 }

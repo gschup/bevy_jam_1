@@ -3,9 +3,11 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::SessionType;
 use ggrs::{P2PSession, PlayerHandle};
 
-use crate::{menu::connect::LocalHandles, GGRSConfig};
+use crate::{menu::connect::LocalHandles, GGRSConfig, SpriteAssets};
 
-use super::{prelude::*, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP};
+use super::{
+    prelude::*, FRAMES_PER_SPRITE, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
+};
 
 pub fn input(
     handle: In<PlayerHandle>,
@@ -117,6 +119,31 @@ pub fn cleanup_game(query: Query<Entity, With<GameEntity>>, mut commands: Comman
 
     for e in query.iter() {
         commands.entity(e).despawn_recursive();
+    }
+}
+
+pub fn update_attacker_sprite(
+    mut query: Query<(
+        &mut TextureAtlasSprite,
+        &mut Handle<TextureAtlas>,
+        &AttackerState,
+    )>,
+    sprites: Res<SpriteAssets>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+) {
+    for (mut sprite, mut atlas_handle, state) in query.iter_mut() {
+        match *state {
+            AttackerState::Idle(_) => *atlas_handle = sprites.janitor_idle.clone(),
+            AttackerState::Jump(_) => *atlas_handle = sprites.janitor_jump.clone(),
+            AttackerState::Fall(_) => *atlas_handle = sprites.janitor_fall.clone(),
+            AttackerState::Land(_) => *atlas_handle = sprites.janitor_land.clone(),
+            AttackerState::Walk(_) => *atlas_handle = sprites.janitor_walk.clone(),
+        }
+
+        let texture_atlas = texture_atlases
+            .get(atlas_handle.as_ref())
+            .expect("TextureAtlas not found.");
+        sprite.index = (state.get_frame() / FRAMES_PER_SPRITE) % texture_atlas.textures.len();
     }
 }
 

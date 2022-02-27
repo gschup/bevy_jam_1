@@ -7,12 +7,12 @@ use crate::{
     menu::win::MatchResult,
     physics::prelude::*,
     round::{prelude::*, resources::Input},
-    AppState, NUM_PLAYERS,
+    AppState, SpriteAssets, NUM_PLAYERS,
 };
 
 use super::{
     GROUND, GROUND_LEVEL, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED,
-    NUM_ROUNDS, PLAYER_COLORS, PLAYER_SIZE,
+    NUM_ROUNDS, PLAYER_SIZE,
 };
 
 const INTERLUDE_LENGTH: u32 = 60;
@@ -67,25 +67,26 @@ pub fn spawn_world(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) 
         .insert(RoundEntity);
 }
 
-pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
+pub fn spawn_players(
+    mut commands: Commands,
+    mut rip: ResMut<RollbackIdProvider>,
+    sprites: Res<SpriteAssets>,
+) {
     for handle in 0..NUM_PLAYERS {
-        let player_size = Vec2::new(PLAYER_SIZE / 2., PLAYER_SIZE);
-
         let x = (2. * handle as f32 - 1.) * 20.;
         let y = 0.;
         commands
-            .spawn_bundle(SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(x, y, 1.)),
-                sprite: Sprite {
-                    color: PLAYER_COLORS[handle],
-                    custom_size: Some(player_size),
-                    ..Default::default()
-                },
+            .spawn_bundle(SpriteSheetBundle {
+                transform: Transform::from_xyz(x, y, 1.),
+                sprite: TextureAtlasSprite::new(0),
+                texture_atlas: sprites.janitor_idle.clone(),
                 ..Default::default()
             })
             .insert_bundle(DynamicBoxBundle {
                 pos: Pos(Vec2::new(x, y)),
-                collider: BoxCollider { size: player_size },
+                collider: BoxCollider {
+                    size: Vec2::new(PLAYER_SIZE / 2., PLAYER_SIZE),
+                },
                 ..Default::default()
             })
             .insert(Attacker { handle })
@@ -108,7 +109,7 @@ pub fn start_round(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundS
  */
 
 const IDLE_THRESH: f32 = 0.01;
-const LAND_FRAMES: u16 = 3;
+const LAND_FRAMES: usize = 3;
 /// Needs to happen before input
 pub fn update_attacker_state(
     // todo: would maybe be cleaner to just expose one resource, that includes dynamics as well
