@@ -11,9 +11,12 @@ use crate::{
 };
 
 use super::{
-    ARENA_SIZE, GROUND, GROUND_LEVEL, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT,
-    MAX_SPEED, NUM_ROUNDS, PLAYER_COLORS, PLAYER_SIZE,
+    GROUND, GROUND_LEVEL, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED,
+    NUM_ROUNDS, PLAYER_COLORS, PLAYER_SIZE,
 };
+
+const INTERLUDE_LENGTH: u32 = 60;
+const ROUND_LENGTH: u32 = 600;
 
 /*
  * INTERLUDE
@@ -21,21 +24,21 @@ use super::{
 
 pub fn setup_interlude(mut state: ResMut<RoundState>) {
     *state = RoundState::Interlude;
-    println!("INTERLUDE_START");
+    //println!("INTERLUDE_START");
 }
 
 pub fn run_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
     frame_count.frame += 1;
-    if frame_count.frame > 60 {
+    if frame_count.frame >= INTERLUDE_LENGTH {
         *state = RoundState::InterludeEnd;
     }
-    println!("INTERLUDE {}", frame_count.frame);
+    //println!("INTERLUDE {}", frame_count.frame);
 }
 
 pub fn cleanup_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
     frame_count.frame = 0;
     *state = RoundState::RoundStart;
-    println!("INTERLUDE_END");
+    //println!("INTERLUDE_END");
 }
 
 /*
@@ -64,21 +67,14 @@ pub fn spawn_world(mut commands: Commands) {
 }
 
 pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
-    let r = ARENA_SIZE / 4.;
-
     for handle in 0..NUM_PLAYERS {
-        let rot = handle as f32 / NUM_PLAYERS as f32 * 2. * std::f32::consts::PI;
-        let x = r * rot.cos();
-        let y = r * rot.sin();
-
-        let mut transform = Transform::from_translation(Vec3::new(x, y, 1.));
-        transform.rotate(Quat::from_rotation_z(rot));
-
         let player_size = Vec2::new(PLAYER_SIZE / 2., PLAYER_SIZE);
 
+        let x = (2. * handle as f32 - 1.) * 20.;
+        let y = 0.;
         commands
             .spawn_bundle(SpriteBundle {
-                transform,
+                transform: Transform::from_translation(Vec3::new(x, y, 1.)),
                 sprite: Sprite {
                     color: PLAYER_COLORS[handle],
                     custom_size: Some(player_size),
@@ -87,7 +83,7 @@ pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>
                 ..Default::default()
             })
             .insert_bundle(DynamicBoxBundle {
-                pos: Pos(Vec2::new(0., 0.)),
+                pos: Pos(Vec2::new(x, y)),
                 collider: BoxCollider { size: player_size },
                 ..Default::default()
             })
@@ -103,7 +99,7 @@ pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>
 pub fn start_round(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
     frame_count.frame = 0;
     *state = RoundState::Round;
-    println!("ROUND START");
+    //println!("ROUND START");
 }
 
 /*
@@ -250,12 +246,12 @@ pub fn move_players(
 pub fn check_round_end(mut frame_count: ResMut<FrameCount>, mut round_state: ResMut<RoundState>) {
     frame_count.frame += 1;
 
-    // dummy win condition - game ends after 1 seconds
-    if frame_count.frame > 60 {
+    // dummy win condition - game ends after ROUND_LENGTH frames
+    if frame_count.frame >= ROUND_LENGTH {
         *round_state = RoundState::RoundEnd;
     }
 
-    println!("ROUND {}", frame_count.frame);
+    //println!("ROUND {}", frame_count.frame);
 }
 
 /*
@@ -277,7 +273,6 @@ pub fn cleanup_round(
 
     frame_count.frame = 0;
     round_data.cur_round += 1; // update round information
-    println!("ROUND END {:?}", round_data);
 
     if round_data.cur_round >= NUM_ROUNDS {
         // go to win screen
@@ -285,10 +280,11 @@ pub fn cleanup_round(
             Ok(_) => commands.insert_resource(MatchResult {
                 result: "TODO!".to_owned(), // TODO: should be created from the RoundData
             }),
-            Err(e) => println!("Could not change app state to AppState::Win : {}", e), // this happens when there is a rollback and the change to app win is queued twice
+            Err(e) => warn!("Could not change app state to AppState::Win : {}", e), // this happens when there is a rollback and the change to app win is queued twice
         };
     } else {
         // start another round
         *round_state = RoundState::InterludeStart;
     }
+    //println!("ROUND END {:?}", round_data);
 }

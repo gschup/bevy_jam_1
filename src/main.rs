@@ -97,7 +97,10 @@ fn main() {
                 // adding physics in a separate stage for now,
                 // could perhaps merge with the stage below for increased parallelism...
                 // but this is a web jam game, so we don't *really* care about that now...
-                .with_stage(PhysicsUpdateStage, create_physics_stage())
+                .with_stage(
+                    PhysicsUpdateStage,
+                    create_physics_stage().with_run_criteria(on_round), // only run physics when the round runs
+                )
                 .with_stage_after(
                     PhysicsUpdateStage,
                     ROLLBACK_SYSTEMS,

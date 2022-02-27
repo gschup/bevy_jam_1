@@ -20,9 +20,8 @@ pub struct PlatformerControls {
 }
 
 // the u16 counts the number of frames the attacker has been in that state
-#[derive(Clone, Copy, Component, Reflect, Debug, PartialEq)]
+#[derive(Clone, Copy, Component, Reflect, Debug)]
 #[reflect(Component)]
-#[reflect_value(PartialEq)]
 pub enum AttackerState {
     Idle(u16),
     Jump(u16),
@@ -32,6 +31,7 @@ pub enum AttackerState {
 }
 
 impl AttackerState {
+    #[allow(dead_code)]
     pub fn is_grounded(&self) -> bool {
         match self {
             AttackerState::Idle(..) | AttackerState::Land(..) | AttackerState::Walk(..) => true,

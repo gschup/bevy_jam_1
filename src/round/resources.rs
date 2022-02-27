@@ -13,9 +13,8 @@ pub struct FrameCount {
     pub frame: u32,
 }
 
-#[derive(Copy, Clone, Reflect, Hash, Component, PartialEq)]
-#[reflect_value(PartialEq)]
-//#[reflect(Hash)]
+#[derive(Copy, Clone, Reflect, Hash, Component)]
+#[reflect(Hash)]
 pub enum RoundState {
     InterludeStart,
     Interlude,
