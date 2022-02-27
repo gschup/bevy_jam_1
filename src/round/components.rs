@@ -18,7 +18,7 @@ pub struct GameEntity;
 #[derive(Default, Reflect, Component)]
 #[reflect(Component)]
 pub struct PlatformerControls {
-    pub accel: f32,
+    pub vertical: f32,
     pub horizontal: f32,
 }
 
