@@ -22,9 +22,6 @@ pub fn checksum_players(
         bytes.extend_from_slice(&v.0.x.to_le_bytes());
         bytes.extend_from_slice(&v.0.y.to_le_bytes());
 
-        // bytes.extend_from_slice(&v.0.x.to_le_bytes());
-        // bytes.extend_from_slice(&v.0.y.to_le_bytes());
-
         // naive checksum implementation
         checksum.value = fletcher16(&bytes);
     }

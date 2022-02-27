@@ -5,8 +5,13 @@ pub struct Attacker {
     pub handle: usize,
 }
 
+// cleaned up after every round
 #[derive(Component)]
 pub struct RoundEntity;
+
+// cleaned up after the game
+#[derive(Component)]
+pub struct GameEntity;
 
 #[derive(Default, Reflect, Component)]
 pub struct PlatformerControls {
@@ -15,8 +20,9 @@ pub struct PlatformerControls {
 }
 
 // the u16 counts the number of frames the attacker has been in that state
-#[derive(Clone, Copy, Component, Reflect, Debug)]
+#[derive(Clone, Copy, Component, Reflect, Debug, PartialEq)]
 #[reflect(Component)]
+#[reflect_value(PartialEq)]
 pub enum AttackerState {
     Idle(u16),
     Jump(u16),

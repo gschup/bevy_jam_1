@@ -1,18 +1,10 @@
-use bevy::prelude::*;
-use bevy_ggrs::{Rollback, RollbackIdProvider, SessionType};
+use bevy::{ecs::schedule::ShouldRun, prelude::*};
+use bevy_ggrs::SessionType;
 use ggrs::{P2PSession, PlayerHandle};
 
-use crate::{
-    checksum::Checksum,
-    menu::{connect::LocalHandles, win::MatchData},
-    physics::prelude::*,
-    AppState, GGRSConfig, NUM_PLAYERS,
-};
+use crate::{menu::connect::LocalHandles, GGRSConfig};
 
-use super::{
-    prelude::*, ARENA_SIZE, GROUND, GROUND_LEVEL, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT,
-    INPUT_UP, PLAYER_COLORS, PLAYER_SIZE,
-};
+use super::{prelude::*, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP};
 
 pub fn input(
     handle: In<PlayerHandle>,
@@ -58,98 +50,55 @@ pub fn input(
     super::resources::Input { inp }
 }
 
-pub fn setup_round(mut commands: Commands) {
-    commands.insert_resource(FrameCount::default());
-    let mut cam = OrthographicCameraBundle::new_2d();
-    cam.orthographic_projection.scale = 1. / 2.; // Asset pixels are 2 times bigger than "device points"
-    commands.spawn_bundle(cam).insert(RoundEntity);
-
-    // commands
-    //     .spawn_bundle(SpriteBundle {
-    //         transform: Transform::from_xyz(0., 0., 0.),
-    //         sprite: Sprite {
-    //             color: Color::BLACK,
-    //             custom_size: Some(Vec2::new(ARENA_SIZE, ARENA_SIZE)),
-    //             ..Default::default()
-    //         },
-    //         ..Default::default()
-    //     })
-    //     .insert(RoundEntity);
-
-    // level geometry
-
-    // todo: could import the body builder from bevy_xpbd to clean this up
-    let ground_size = Vec2::new(2000., 2000.); // should just be bigger than the screen
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                custom_size: Some(ground_size),
-                color: GROUND,
-                ..Default::default()
-            },
-            // using transform for now, could probably just as well use custom size
-            ..Default::default()
-        })
-        .insert_bundle(StaticBoxBundle {
-            pos: Pos(Vec2::new(0., -ground_size.y / 2. + GROUND_LEVEL)),
-            collider: BoxCollider { size: ground_size },
-            ..Default::default()
-        });
-
-    // // Add a falling box to see that physics are working
-    // let box_size = Vec2::new(24., 24.);
-    // commands
-    //     .spawn_bundle(SpriteBundle {
-    //         sprite: Sprite {
-    //             color: BLUE,
-    //             custom_size: Some(box_size),
-    //             ..Default::default()
-    //         },
-    //         ..Default::default()
-    //     })
-    //     .insert_bundle(DynamicBoxBundle {
-    //         pos: Pos(Vec2::new(0., 0.)),
-    //         collider: BoxCollider { size: box_size },
-    //         ..Default::default()
-    //     });
-    //     // todo: add rollback entity
+pub fn on_interlude_start(state: Res<RoundState>) -> ShouldRun {
+    match *state {
+        RoundState::InterludeStart => ShouldRun::Yes,
+        _ => ShouldRun::No,
+    }
 }
 
-pub fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
-    let r = ARENA_SIZE / 4.;
-
-    for handle in 0..NUM_PLAYERS {
-        let rot = handle as f32 / NUM_PLAYERS as f32 * 2. * std::f32::consts::PI;
-        let x = r * rot.cos();
-        let y = r * rot.sin();
-
-        let mut transform = Transform::from_translation(Vec3::new(x, y, 1.));
-        transform.rotate(Quat::from_rotation_z(rot));
-
-        let player_size = Vec2::new(PLAYER_SIZE / 2., PLAYER_SIZE);
-
-        commands
-            .spawn_bundle(SpriteBundle {
-                transform,
-                sprite: Sprite {
-                    color: PLAYER_COLORS[handle],
-                    custom_size: Some(player_size),
-                    ..Default::default()
-                },
-                ..Default::default()
-            })
-            .insert_bundle(DynamicBoxBundle {
-                pos: Pos(Vec2::new(0., 0.)),
-                collider: BoxCollider { size: player_size },
-                ..Default::default()
-            })
-            .insert(Attacker { handle })
-            .insert(AttackerState::Idle(0))
-            .insert(PlatformerControls::default())
-            .insert(Checksum::default())
-            .insert(Rollback::new(rip.next_id()))
-            .insert(RoundEntity);
+pub fn on_interlude(state: Res<RoundState>) -> ShouldRun {
+    match *state {
+        RoundState::Interlude => ShouldRun::Yes,
+        _ => ShouldRun::No,
     }
+}
+
+pub fn on_interlude_end(state: Res<RoundState>) -> ShouldRun {
+    match *state {
+        RoundState::InterludeEnd => ShouldRun::Yes,
+        _ => ShouldRun::No,
+    }
+}
+
+pub fn on_round_start(state: Res<RoundState>) -> ShouldRun {
+    match *state {
+        RoundState::RoundStart => ShouldRun::Yes,
+        _ => ShouldRun::No,
+    }
+}
+
+pub fn on_round(state: Res<RoundState>) -> ShouldRun {
+    match *state {
+        RoundState::Round => ShouldRun::Yes,
+        _ => ShouldRun::No,
+    }
+}
+
+pub fn on_round_end(state: Res<RoundState>) -> ShouldRun {
+    match *state {
+        RoundState::RoundEnd => ShouldRun::Yes,
+        _ => ShouldRun::No,
+    }
+}
+
+pub fn setup_game(mut commands: Commands) {
+    commands.insert_resource(RoundState::InterludeStart);
+    commands.insert_resource(FrameCount::default());
+    commands.insert_resource(RoundData::default());
+    let mut cam = OrthographicCameraBundle::new_2d();
+    cam.orthographic_projection.scale = 1. / 2.; // Asset pixels are 2 times bigger than "device points"
+    commands.spawn_bundle(cam).insert(GameEntity);
 }
 
 pub fn print_p2p_events(mut session: ResMut<P2PSession<GGRSConfig>>) {
@@ -158,19 +107,7 @@ pub fn print_p2p_events(mut session: ResMut<P2PSession<GGRSConfig>>) {
     }
 }
 
-pub fn check_win(mut state: ResMut<State<AppState>>, mut commands: Commands) {
-    let condition = false;
-    let confirmed = false;
-
-    if condition && confirmed {
-        state.set(AppState::Win).expect("Could not change state.");
-        commands.insert_resource(MatchData {
-            result: "Orange won!".to_owned(),
-        });
-    }
-}
-
-pub fn cleanup(query: Query<Entity, With<RoundEntity>>, mut commands: Commands) {
+pub fn cleanup_game(query: Query<Entity, With<GameEntity>>, mut commands: Commands) {
     commands.remove_resource::<FrameCount>();
     commands.remove_resource::<LocalHandles>();
     commands.remove_resource::<P2PSession<GGRSConfig>>();

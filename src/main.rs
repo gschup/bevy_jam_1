@@ -48,6 +48,7 @@ pub enum AppState {
 enum SystemLabel {
     UpdateState,
     Input,
+    Move,
 }
 
 #[derive(AssetCollection)]
@@ -84,12 +85,13 @@ fn main() {
         .with_input_system(input)
         .register_rollback_type::<AttackerState>()
         .register_rollback_type::<Transform>()
-        // .register_rollback_type::<Velocity>()
         .register_rollback_type::<Pos>()
         .register_rollback_type::<Vel>()
         .register_rollback_type::<PrevPos>()
         .register_rollback_type::<FrameCount>()
         .register_rollback_type::<Checksum>()
+        .register_rollback_type::<RoundState>()
+        .register_rollback_type::<RoundData>()
         .with_rollback_schedule(
             Schedule::default()
                 // adding physics in a separate stage for now,
@@ -100,14 +102,55 @@ fn main() {
                     PhysicsUpdateStage,
                     ROLLBACK_SYSTEMS,
                     SystemStage::parallel()
-                        .with_system(update_attacker_state.label(SystemLabel::UpdateState))
-                        .with_system(
-                            apply_inputs
-                                .label(SystemLabel::Input)
-                                .after(SystemLabel::UpdateState),
+                        // interlude start
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_interlude_start)
+                                .with_system(setup_interlude),
                         )
-                        .with_system(move_players.after(SystemLabel::Input))
-                        .with_system(increase_frame_count),
+                        // interlude
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_interlude)
+                                .with_system(run_interlude),
+                        )
+                        // interlude end
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_interlude_end)
+                                .with_system(cleanup_interlude),
+                        )
+                        // round start
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_round_start)
+                                .with_system(spawn_players)
+                                .with_system(spawn_world)
+                                .with_system(start_round),
+                        )
+                        // round
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_round)
+                                .with_system(update_attacker_state.label(SystemLabel::UpdateState))
+                                .with_system(
+                                    apply_inputs
+                                        .label(SystemLabel::Input)
+                                        .after(SystemLabel::UpdateState),
+                                )
+                                .with_system(
+                                    move_players
+                                        .label(SystemLabel::Move)
+                                        .after(SystemLabel::Input),
+                                )
+                                .with_system(check_round_end.after(SystemLabel::Move)),
+                        )
+                        // round end
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_round_end)
+                                .with_system(cleanup_round),
+                        ),
                 )
                 .with_stage_after(
                     ROLLBACK_SYSTEMS,
@@ -171,29 +214,12 @@ fn main() {
         )
         .add_system_set(SystemSet::on_exit(AppState::Win).with_system(menu::win::cleanup_ui))
         // local round
-        .add_system_set(
-            SystemSet::on_enter(AppState::RoundLocal)
-                .with_system(setup_round)
-                .with_system(spawn_players),
-        )
-        .add_system_set(SystemSet::on_update(AppState::RoundLocal).with_system(check_win))
-        .add_system_set(
-            SystemSet::on_exit(AppState::RoundLocal).with_system(round::systems::cleanup),
-        )
+        .add_system_set(SystemSet::on_enter(AppState::RoundLocal).with_system(setup_game))
+        .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
         // online round
-        .add_system_set(
-            SystemSet::on_enter(AppState::RoundOnline)
-                .with_system(setup_round)
-                .with_system(spawn_players),
-        )
-        .add_system_set(
-            SystemSet::on_update(AppState::RoundOnline)
-                .with_system(print_p2p_events)
-                .with_system(check_win),
-        )
-        .add_system_set(
-            SystemSet::on_exit(AppState::RoundOnline).with_system(round::systems::cleanup),
-        );
+        .add_system_set(SystemSet::on_enter(AppState::RoundOnline).with_system(setup_game))
+        .add_system_set(SystemSet::on_update(AppState::RoundOnline).with_system(print_p2p_events))
+        .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game));
 
     #[cfg(target_arch = "wasm32")]
     {

@@ -29,3 +29,4 @@ pub const JUMP_HEIGHT: f32 = 2. * PLAYER_SIZE;
 pub const JUMP_TIME_TO_PEAK: f32 = 1.;
 const ARENA_SIZE: f32 = 720.0;
 const GROUND_LEVEL: f32 = -100.;
+const NUM_ROUNDS: u32 = 2;
