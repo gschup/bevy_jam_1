@@ -13,14 +13,7 @@ use menu::{
     connect::{create_matchbox_socket, update_matchbox_socket},
     online::{update_lobby_btn, update_lobby_id, update_lobby_id_display},
 };
-use physics::{
-    components::{Aabb, Mass, PreSolveVel, Restitution},
-    create_physics_stage,
-};
-use physics::{
-    components::{PrevPos, Vel},
-    prelude::*,
-};
+use physics::{components::*, create_physics_stage, prelude::*};
 use round::prelude::*;
 
 const ROLLBACK_SYSTEMS: &str = "rollback_systems";
@@ -92,6 +85,7 @@ fn main() {
         .register_rollback_type::<Attacker>()
         .register_rollback_type::<RoundEntity>()
         .register_rollback_type::<AttackerState>()
+        .register_rollback_type::<PlatformerControls>()
         .register_rollback_type::<Transform>()
         .register_rollback_type::<Pos>()
         .register_rollback_type::<Vel>()
@@ -105,6 +99,8 @@ fn main() {
         .register_rollback_type::<Checksum>()
         .register_rollback_type::<RoundState>()
         .register_rollback_type::<RoundData>()
+        .register_rollback_type::<StaticContacts>()
+        .register_rollback_type::<Contacts>()
         .with_rollback_schedule(
             Schedule::default()
                 // adding physics in a separate stage for now,
@@ -156,11 +152,14 @@ fn main() {
                                         .label(SystemLabel::Move)
                                         .after(SystemLabel::Input),
                                 )
-                                .with_system(check_round_end.after(SystemLabel::Move)),
+                                .with_system(
+                                    check_round_end.label("end check").after(SystemLabel::Move),
+                                ),
                         )
                         // round end
                         .with_system_set(
                             SystemSet::new()
+                                .after("end check")
                                 .with_run_criteria(on_round_end)
                                 .with_system(cleanup_round),
                         ),

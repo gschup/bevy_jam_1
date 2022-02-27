@@ -57,7 +57,7 @@ pub struct Pos(pub Vec2);
 #[reflect(Component)]
 pub struct PrevPos(pub Vec2);
 
-#[derive(Component, Reflect, Debug, Default)]
+#[derive(Component, Reflect, Clone, Copy, Debug, Default)]
 #[reflect(Component)]
 pub struct Vel(pub(crate) Vec2);
 

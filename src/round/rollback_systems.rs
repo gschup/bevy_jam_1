@@ -32,20 +32,20 @@ pub fn run_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<Roun
     if frame_count.frame >= INTERLUDE_LENGTH {
         *state = RoundState::InterludeEnd;
     }
-    //println!("INTERLUDE {}", frame_count.frame);
+    // println!("INTERLUDE {}", frame_count.frame);
 }
 
 pub fn cleanup_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
     frame_count.frame = 0;
     *state = RoundState::RoundStart;
-    //println!("INTERLUDE_END");
+    // println!("INTERLUDE_END");
 }
 
 /*
  * ROUND START
  */
 
-pub fn spawn_world(mut commands: Commands) {
+pub fn spawn_world(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
     // todo: could import the body builder from bevy_xpbd to clean this up
     let ground_size = Vec2::new(2000., 2000.); // should just be bigger than the screen
     commands
@@ -63,6 +63,7 @@ pub fn spawn_world(mut commands: Commands) {
             collider: BoxCollider { size: ground_size },
             ..Default::default()
         })
+        .insert(Rollback::new(rip.next_id()))
         .insert(RoundEntity);
 }
 
