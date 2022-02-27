@@ -1,6 +1,7 @@
 //! simplified version of bevy_xpbd
 
 use bevy::prelude::*;
+use bevy_system_graph::SystemGraph;
 use systems::*;
 
 use resources::*;
@@ -60,6 +61,26 @@ enum Step {
 pub struct PhysicsUpdateStage;
 
 pub fn create_physics_stage() -> SystemStage {
+    let solve_pos_systems: SystemSet = {
+        let graph = SystemGraph::new();
+        graph
+            .root(solve_pos_ball_ball)
+            // Run solvers sequentially to make sure rollback is deterministic
+            // box_box and ball_ball could probably run in parallel,
+            // but just keep it simple for now, wasm isn't parallel anyway
+            .then(solve_pos_box_box)
+            .then(solve_pos_static_ball_ball)
+            .then(solve_pos_static_box_ball)
+            .then(solve_pos_static_box_box);
+        graph.into()
+    };
+
+    let solve_vel_systems: SystemSet = {
+        let graph = SystemGraph::new();
+        graph.root(solve_vel).then(solve_vel_statics);
+        graph.into()
+    };
+
     SystemStage::parallel()
         // todo: needed if we implement substepping
         // .with_run_criteria(run_criteria)
@@ -84,14 +105,9 @@ pub fn create_physics_stage() -> SystemStage {
         )
         .with_system(clear_contacts.before(Step::SolvePositions))
         .with_system_set(
-            SystemSet::new()
+            solve_pos_systems
                 .label(Step::SolvePositions)
-                .after(Step::Integrate)
-                .with_system(solve_pos_ball_ball)
-                .with_system(solve_pos_box_box)
-                .with_system(solve_pos_static_ball_ball)
-                .with_system(solve_pos_static_box_ball)
-                .with_system(solve_pos_static_box_box),
+                .after(Step::Integrate),
         )
         .with_system_set(
             SystemSet::new()
@@ -101,11 +117,9 @@ pub fn create_physics_stage() -> SystemStage {
             // .with_system(update_ang_vel), todo: for rotation
         )
         .with_system_set(
-            SystemSet::new()
+            solve_vel_systems
                 .label(Step::SolveVelocities)
-                .after(Step::UpdateVelocities)
-                .with_system(solve_vel)
-                .with_system(solve_vel_statics),
+                .after(Step::UpdateVelocities),
         )
         .with_system(
             sync_transforms
