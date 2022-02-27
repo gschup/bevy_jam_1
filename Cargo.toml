@@ -11,6 +11,7 @@ bevy = { version = "0.6", default-features = false, features = ["render", "png",
 bytemuck = {version="1.7.3", features= ["derive"]}
 ggrs = { version = "0.9", features=["sync-send"] }
 bevy_ggrs = "0.9"
+bevy_system_graph = "0.1"
 matchbox_socket = { git = "https://github.com/johanhelsing/matchbox", features = ["ggrs-socket"] }
 log = "0.4"
 derive_more = "0.99"

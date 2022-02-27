@@ -116,17 +116,18 @@ const LAND_FRAMES: u16 = 3;
 pub fn update_attacker_state(
     // todo: would maybe be cleaner to just expose one resource, that includes dynamics as well
     // just check against statics (ground) for now
-    contacts: ResMut<StaticContacts>,
+    contacts: ResMut<Contacts>,
+    static_contacts: ResMut<StaticContacts>,
     mut query: Query<(Entity, &Vel, &mut AttackerState)>,
 ) {
     for (id, vel, mut state) in query.iter_mut() {
         match *state {
             AttackerState::Idle(ref mut f) => {
-                if vel.0.y < 0. {
+                if vel.0.y < -0.01 {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
-                if vel.0.y > 0. {
+                if vel.0.y > 0.01 {
                     *state = AttackerState::Jump(0);
                     continue;
                 }
@@ -137,21 +138,34 @@ pub fn update_attacker_state(
                 *f += 1;
             }
             AttackerState::Jump(ref mut f) => {
-                if vel.0.y < 0. {
+                if vel.0.y < 0.01 {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
                 *f += 1;
             }
             AttackerState::Fall(ref mut f) => {
-                if let Some(_) = contacts.0.iter().find(|(e, _, n)| *e == id && n.y < 0.) {
+                if static_contacts
+                    .0
+                    .iter()
+                    .any(|(e, _, n)| *e == id && n.y < 0.)
+                    || contacts.0.iter().any(|(a, b, n)| {
+                        if *a == id {
+                            n.y < 0.
+                        } else if *b == id {
+                            n.y > 0.
+                        } else {
+                            false
+                        }
+                    })
+                {
                     *state = AttackerState::Land(0);
                     continue;
                 }
                 *f += 1;
             }
             AttackerState::Land(ref mut f) => {
-                if vel.0.y < 0. {
+                if vel.0.y < -0.01 {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
@@ -162,11 +176,11 @@ pub fn update_attacker_state(
                 *f += 1;
             }
             AttackerState::Walk(ref mut f) => {
-                if vel.0.y < 0. {
+                if vel.0.y < -0.01 {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
-                if vel.0.y > 0. {
+                if vel.0.y > 0.01 {
                     *state = AttackerState::Jump(0);
                     continue;
                 }
