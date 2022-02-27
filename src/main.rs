@@ -20,7 +20,7 @@ const ROLLBACK_SYSTEMS: &str = "rollback_systems";
 const CHECKSUM_UPDATE: &str = "checksum_update";
 const PHYSICS_UPDATE: &str = "physics_update";
 
-const NUM_PLAYERS: usize = 1;
+const NUM_PLAYERS: usize = 2;
 const FPS: usize = 60;
 const MAX_PREDICTION: usize = 12;
 const INPUT_DELAY: usize = 2;
@@ -116,6 +116,7 @@ fn main() {
         .register_rollback_type::<RoundState>()
         .register_rollback_type::<RoundData>()
         .register_rollback_type::<Transform>()
+        .register_rollback_type::<FacingDirection>()
         // physics types
         .register_rollback_type::<Pos>()
         .register_rollback_type::<Vel>()

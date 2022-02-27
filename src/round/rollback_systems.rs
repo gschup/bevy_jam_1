@@ -91,6 +91,7 @@ pub fn spawn_players(
             })
             .insert(Attacker { handle })
             .insert(AttackerState::Idle(0))
+            .insert(FacingDirection::Right)
             .insert(PlatformerControls::default())
             .insert(Checksum::default())
             .insert(Rollback::new(rip.next_id()))
@@ -116,27 +117,43 @@ pub fn update_attacker_state(
     // just check against statics (ground) for now
     contacts: ResMut<Contacts>,
     static_contacts: ResMut<StaticContacts>,
-    mut query: Query<(Entity, &Vel, &mut AttackerState)>,
+    mut query: Query<(
+        Entity,
+        &Vel,
+        &PlatformerControls,
+        &mut AttackerState,
+        &mut FacingDirection,
+    )>,
 ) {
-    for (id, vel, mut state) in query.iter_mut() {
+    for (id, vel, contr, mut state, mut face_dir) in query.iter_mut() {
+        // update facing direction
+        if contr.horizontal < -IDLE_THRESH {
+            *face_dir = FacingDirection::Left;
+        }
+
+        if contr.horizontal > IDLE_THRESH {
+            *face_dir = FacingDirection::Right;
+        }
+
+        //update state
         match *state {
             AttackerState::Idle(ref mut f) => {
-                if vel.0.y < -0.01 {
+                if vel.0.y < -IDLE_THRESH {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
-                if vel.0.y > 0.01 {
+                if vel.0.y > IDLE_THRESH {
                     *state = AttackerState::Jump(0);
                     continue;
                 }
-                if vel.0.x.abs() > IDLE_THRESH {
+                if contr.horizontal.abs() > IDLE_THRESH {
                     *state = AttackerState::Walk(0);
                     continue;
                 }
                 *f += 1;
             }
             AttackerState::Jump(ref mut f) => {
-                if vel.0.y < 0.01 {
+                if vel.0.y < IDLE_THRESH {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
@@ -163,7 +180,7 @@ pub fn update_attacker_state(
                 *f += 1;
             }
             AttackerState::Land(ref mut f) => {
-                if vel.0.y < -0.01 {
+                if vel.0.y < -IDLE_THRESH {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
@@ -174,15 +191,15 @@ pub fn update_attacker_state(
                 *f += 1;
             }
             AttackerState::Walk(ref mut f) => {
-                if vel.0.y < -0.01 {
+                if vel.0.y < -IDLE_THRESH {
                     *state = AttackerState::Fall(0);
                     continue;
                 }
-                if vel.0.y > 0.01 {
+                if vel.0.y > IDLE_THRESH {
                     *state = AttackerState::Jump(0);
                     continue;
                 }
-                if vel.0.x.abs() < IDLE_THRESH {
+                if contr.horizontal.abs() < IDLE_THRESH {
                     *state = AttackerState::Idle(0);
                     continue;
                 }
@@ -212,7 +229,7 @@ pub fn apply_inputs(
             0.
         };
 
-        c.accel = if input & INPUT_DOWN != 0 && input & INPUT_UP == 0 {
+        c.vertical = if input & INPUT_DOWN != 0 && input & INPUT_UP == 0 {
             -1. // up positive
         } else if input & INPUT_DOWN == 0 && input & INPUT_UP != 0 {
             1.
@@ -231,9 +248,9 @@ pub fn move_players(
         // this totally overwrites any velocity on the x axis, which might not be ideal...
         vel.0.x = controls.horizontal * MAX_SPEED;
 
-        if controls.accel > 0. && state.can_jump() {
+        if controls.vertical > 0. && state.can_jump() {
             let v0 = f32::sqrt(-2. * JUMP_HEIGHT * gravity.0.y);
-            vel.0.y = controls.accel * v0;
+            vel.0.y = controls.vertical * v0;
             // vel.0.y = controls.accel * MAX_SPEED;
         }
 

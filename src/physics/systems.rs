@@ -224,7 +224,8 @@ pub fn solve_vel_statics(
 pub fn sync_transforms(mut query: Query<(&mut bevy::transform::components::Transform, &Pos)>) {
     debug!("sync_transforms");
     for (mut transform, pos) in query.iter_mut() {
-        transform.translation = pos.0.extend(0.);
+        let z = transform.translation.z;
+        transform.translation = pos.0.extend(z);
     }
 }
 
@@ -292,4 +293,3 @@ fn constrain_body_velocity(
     let restitution = (restitution_a.0 + restitution_b.0) / 2.;
     vel_a.0 += n * (-normal_vel + (-restitution * pre_solve_normal_vel).min(0.));
 }
-

@@ -18,11 +18,24 @@ pub struct GameEntity;
 #[derive(Default, Reflect, Component)]
 #[reflect(Component)]
 pub struct PlatformerControls {
-    pub accel: f32,
+    pub vertical: f32,
     pub horizontal: f32,
 }
 
-// the u16 counts the number of frames the attacker has been in that state
+#[derive(Clone, Copy, Component, Reflect, Debug, PartialEq, Eq)]
+#[reflect(Component)]
+pub enum FacingDirection {
+    Left,
+    Right,
+}
+
+impl Default for FacingDirection {
+    fn default() -> Self {
+        Self::Right
+    }
+}
+
+// the usize counts the number of frames the attacker has been in that state
 #[derive(Clone, Copy, Component, Reflect, Debug)]
 #[reflect(Component)]
 pub enum AttackerState {
@@ -34,7 +47,6 @@ pub enum AttackerState {
 }
 
 impl AttackerState {
-    #[allow(dead_code)]
     pub fn is_grounded(&self) -> bool {
         match self {
             AttackerState::Idle(..) | AttackerState::Land(..) | AttackerState::Walk(..) => true,
