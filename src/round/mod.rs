@@ -10,10 +10,11 @@ pub mod prelude {
     pub use crate::round::{components::*, resources::*, rollback_systems::*, systems::*};
 }
 
-const INPUT_UP: u8 = 0b0001;
-const INPUT_DOWN: u8 = 0b0010;
-const INPUT_LEFT: u8 = 0b0100;
-const INPUT_RIGHT: u8 = 0b1000;
+const INPUT_UP: u8 = 0b00001;
+const INPUT_DOWN: u8 = 0b00010;
+const INPUT_LEFT: u8 = 0b00100;
+const INPUT_RIGHT: u8 = 0b01000;
+const INPUT_ACT: u8 = 0b10000;
 
 const GROUND: Color = Color::rgb(0.5, 0.5, 0.5);
 const ORANGE: Color = Color::rgb(0.8, 0.6, 0.2);

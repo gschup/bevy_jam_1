@@ -10,8 +10,8 @@ use crate::{
 };
 
 use super::{
-    prelude::*, ARENA_SIZE, GROUND, GROUND_LEVEL, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
-    PLAYER_COLORS, PLAYER_SIZE,
+    prelude::*, ARENA_SIZE, GROUND, GROUND_LEVEL, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT,
+    INPUT_UP, PLAYER_COLORS, PLAYER_SIZE,
 };
 
 pub fn input(
@@ -34,6 +34,9 @@ pub fn input(
         if keyboard_input.pressed(KeyCode::D) {
             inp |= INPUT_RIGHT;
         }
+        if keyboard_input.pressed(KeyCode::Space) {
+            inp |= INPUT_ACT;
+        }
     } else {
         if keyboard_input.pressed(KeyCode::Up) {
             inp |= INPUT_UP;
@@ -46,6 +49,9 @@ pub fn input(
         }
         if keyboard_input.pressed(KeyCode::Right) {
             inp |= INPUT_RIGHT;
+        }
+        if keyboard_input.pressed(KeyCode::RShift) {
+            inp |= INPUT_ACT;
         }
     }
 
