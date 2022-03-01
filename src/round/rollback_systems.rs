@@ -12,7 +12,7 @@ use crate::{
 
 use super::{
     ATTACKER_SIZE, DEFENDER_SIZE, GROUND, GROUND_LEVEL, INPUT_ACT, INPUT_DOWN, INPUT_LEFT,
-    INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED, NUM_ROUNDS,
+    INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED, NUM_ROUNDS, FRAMES_PER_SPRITE,
 };
 
 const INTERLUDE_LENGTH: u32 = 60;
@@ -159,7 +159,8 @@ pub fn update_defender_state(mut query: Query<(&DefenderControls, &mut DefenderS
                 *f += 1;
             }
             DefenderState::Fire(ref mut f) => {
-                if *f >= 40 {
+                // fire anim has 4 frames
+                if *f >= FRAMES_PER_SPRITE * 4 {
                     *state = DefenderState::Idle(0);
                     continue;
                 }

@@ -184,28 +184,31 @@ fn main() {
                         .with_system_set(
                             SystemSet::new()
                                 .with_run_criteria(on_round)
-                                .with_system(update_attacker_state.label(SystemLabel::UpdateState))
-                                .with_system(update_defender_state.label(SystemLabel::UpdateState))
-                                .with_system(
-                                    apply_attacker_inputs
-                                        .label(SystemLabel::Input)
-                                        .after(SystemLabel::UpdateState),
-                                )
-                                .with_system(
-                                    apply_defender_inputs
-                                        .label(SystemLabel::Input)
-                                        .after(SystemLabel::UpdateState),
-                                )
-                                .with_system(
-                                    move_attackers
-                                        .label(SystemLabel::Move)
-                                        .after(SystemLabel::Input),
-                                )
-                                .with_system(
-                                    check_round_end
-                                        .label(SystemLabel::End)
-                                        .after(SystemLabel::Move),
-                                ),
+                                .with_system(update_attacker_state)
+                                .with_system(update_defender_state)
+                                .label(SystemLabel::UpdateState),
+                        )
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_round)
+                                .with_system(apply_attacker_inputs)
+                                .with_system(apply_defender_inputs)
+                                .label(SystemLabel::Input)
+                                .after(SystemLabel::UpdateState),
+                        )
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_round)
+                                .with_system(move_attackers)
+                                .label(SystemLabel::Move)
+                                .after(SystemLabel::Input),
+                        )
+                        .with_system_set(
+                            SystemSet::new()
+                                .with_run_criteria(on_round)
+                                .with_system(check_round_end)
+                                .label(SystemLabel::End)
+                                .after(SystemLabel::Move),
                         )
                         // round end
                         .with_system_set(
