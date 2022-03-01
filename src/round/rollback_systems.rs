@@ -120,13 +120,6 @@ pub fn spawn_defender(
             texture_atlas: sprites.janitor_idle.clone(),
             ..Default::default()
         })
-        .insert_bundle(StaticBoxBundle {
-            pos: Pos(Vec2::new(x, y)),
-            collider: BoxCollider {
-                size: Vec2::new(x - 5., y),
-            },
-            ..Default::default()
-        })
         .insert(Defender {
             handle: round_data.cur_round as usize,
         })
@@ -171,8 +164,8 @@ pub fn update_defender_state(
                 }
                 // fire the cake after the first two frames of animation have played
                 if *f == FRAMES_PER_SPRITE * 2 {
-                    let cake_spawn_x = t.translation.x - DEFENDER_SIZE / 2.0;
-                    let cake_spawn_y = t.translation.y;
+                    let cake_spawn_x = t.translation.x - DEFENDER_SIZE / 2. + 10.;
+                    let cake_spawn_y = t.translation.y + 5.;
                     let cake_init_vx = -400.;
                     let cake_init_vy = 500.;
                     commands
