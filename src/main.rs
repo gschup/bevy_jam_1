@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::GGRSPlugin;
-use checksum::{checksum_attackers, checksum_cakes, Checksum};
+use checksum::{checksum_attackers, checksum_cakes, checksum_crosshair, Checksum};
 use ggrs::Config;
 use menu::{
     connect::{create_matchbox_socket, update_matchbox_socket},
@@ -53,10 +53,12 @@ enum SystemLabel {
 
 #[derive(AssetCollection)]
 pub struct MiscAssets {
-    #[asset(path = "images/logo.png")]
+    #[asset(path = "sprites/misc/logo.png")]
     pub game_logo: Handle<Image>,
-    #[asset(path = "sprites/cake/cake.png")]
+    #[asset(path = "sprites/misc/cake.png")]
     pub cake: Handle<Image>,
+    #[asset(path = "sprites/misc/crosshair.png")]
+    pub crosshair: Handle<Image>,
 }
 
 #[derive(AssetCollection)]
@@ -135,6 +137,7 @@ fn main() {
         .register_rollback_type::<Transform>()
         .register_rollback_type::<FacingDirection>()
         .register_rollback_type::<Cake>()
+        .register_rollback_type::<Crosshair>()
         // physics types
         .register_rollback_type::<Pos>()
         .register_rollback_type::<Vel>()
@@ -203,6 +206,7 @@ fn main() {
                             SystemSet::new()
                                 .with_run_criteria(on_round)
                                 .with_system(move_attackers)
+                                .with_system(move_crosshair)
                                 .label(SystemLabel::Move)
                                 .after(SystemLabel::Input),
                         )
@@ -226,7 +230,8 @@ fn main() {
                     CHECKSUM_UPDATE,
                     SystemStage::parallel()
                         .with_system(checksum_attackers)
-                        .with_system(checksum_cakes),
+                        .with_system(checksum_cakes)
+                        .with_system(checksum_crosshair),
                 ),
         )
         .build(&mut app);

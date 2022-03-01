@@ -16,6 +16,10 @@ pub struct Defender {
 #[reflect(Component)]
 pub struct Cake;
 
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct Crosshair;
+
 // cleaned up after every round
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]

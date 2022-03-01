@@ -5,18 +5,17 @@ use ggrs::InputStatus;
 use crate::{
     checksum::Checksum,
     menu::win::MatchResult,
-    physics::prelude::*,
+    physics::{prelude::*, PIXELS_PER_METER},
     round::{prelude::*, resources::Input},
-    AppState, AttackerAssets, MiscAssets, NUM_PLAYERS,
+    AppState, AttackerAssets, DefenderAssets, MiscAssets, NUM_PLAYERS,
 };
 
 use super::{
-    ATTACKER_SIZE, CAKE_SIZE, DEFENDER_SIZE, FRAMES_PER_SPRITE, GROUND, GROUND_LEVEL, INPUT_ACT,
-    INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED, NUM_ROUNDS,
+    ATTACKER_SIZE, CAKE_SIZE, CROSSHAIR_SPEED, DEFENDER_SIZE, DEF_X_POS, FRAMES_PER_SPRITE, GROUND,
+    GROUND_LEVEL, IDLE_THRESH, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
+    INTERLUDE_LENGTH, JUMP_HEIGHT, JUMP_TIME_TO_PEAK, LAND_FRAMES, MAX_SPEED, NUM_ROUNDS,
+    ROUND_LENGTH,
 };
-
-const INTERLUDE_LENGTH: u32 = 60;
-const ROUND_LENGTH: u32 = 600;
 
 /*
  * INTERLUDE
@@ -104,11 +103,11 @@ pub fn spawn_attackers(
     }
 }
 
-const DEF_X_POS: f32 = 250.;
 pub fn spawn_defender(
     mut commands: Commands,
     mut rip: ResMut<RollbackIdProvider>,
-    sprites: Res<AttackerAssets>,
+    def_sprites: Res<DefenderAssets>,
+    misc_sprites: Res<MiscAssets>,
     round_data: Res<RoundData>,
 ) {
     let x = DEF_X_POS;
@@ -117,7 +116,7 @@ pub fn spawn_defender(
         .spawn_bundle(SpriteSheetBundle {
             transform: Transform::from_xyz(x, y, 1.),
             sprite: TextureAtlasSprite::new(0),
-            texture_atlas: sprites.janitor_idle.clone(),
+            texture_atlas: def_sprites.fortress_idle.clone(),
             ..Default::default()
         })
         .insert(Defender {
@@ -126,6 +125,18 @@ pub fn spawn_defender(
         .insert(DefenderState::Idle(0))
         .insert(FacingDirection::Right)
         .insert(DefenderControls::default())
+        .insert(Checksum::default())
+        .insert(Rollback::new(rip.next_id()))
+        .insert(RoundEntity);
+
+    // crosshair
+    commands
+        .spawn_bundle(SpriteBundle {
+            texture: misc_sprites.crosshair.clone(),
+            transform: Transform::from_xyz(0., 0., 6.),
+            ..Default::default()
+        })
+        .insert(Crosshair)
         .insert(Checksum::default())
         .insert(Rollback::new(rip.next_id()))
         .insert(RoundEntity);
@@ -145,9 +156,15 @@ pub fn update_defender_state(
     mut commands: Commands,
     sprites: Res<MiscAssets>,
     mut rip: ResMut<RollbackIdProvider>,
-    mut query: Query<(&Transform, &DefenderControls, &mut DefenderState)>,
+    gravity: Res<Gravity>,
+    mut def_query: Query<(&Transform, &DefenderControls, &mut DefenderState)>,
+    crosshair_query: Query<&Transform, With<Crosshair>>,
 ) {
-    for (t, contr, mut state) in query.iter_mut() {
+    let mut should_shoot = false;
+    let mut cake_x = 0.;
+    let mut cake_y = 0.;
+
+    for (t, contr, mut state) in def_query.iter_mut() {
         match *state {
             DefenderState::Idle(ref mut f) => {
                 if contr.fire {
@@ -164,37 +181,43 @@ pub fn update_defender_state(
                 }
                 // fire the cake after the first two frames of animation have played
                 if *f == FRAMES_PER_SPRITE * 2 {
-                    let cake_spawn_x = t.translation.x - DEFENDER_SIZE / 2. + 10.;
-                    let cake_spawn_y = t.translation.y + 5.;
-                    let cake_init_vx = -400.;
-                    let cake_init_vy = 500.;
-                    commands
-                        .spawn_bundle(SpriteBundle {
-                            texture: sprites.cake.clone(),
-                            transform: Transform::from_xyz(cake_spawn_x, cake_spawn_y, 5.),
-                            ..Default::default()
-                        })
-                        .insert_bundle(DynamicBoxBundle {
-                            pos: Pos(Vec2::new(cake_spawn_x, cake_spawn_y)),
-                            collider: BoxCollider {
-                                size: Vec2::new(CAKE_SIZE, CAKE_SIZE),
-                            },
-                            vel: Vel(Vec2::new(cake_init_vx, cake_init_vy)),
-                            ..Default::default()
-                        })
-                        .insert(Cake)
-                        .insert(Checksum::default())
-                        .insert(Rollback::new(rip.next_id()))
-                        .insert(RoundEntity);
+                    should_shoot = true;
+                    cake_x = t.translation.x - DEFENDER_SIZE / 2. + 10.;
+                    cake_y = t.translation.y + 5.;
                 }
                 *f += 1;
             }
         }
     }
+
+    for t in crosshair_query.iter() {
+        if should_shoot {
+            let dist_x = (t.translation.x - cake_x).min(0.);
+            let dist_y = (t.translation.y - cake_y).max(0.);
+            let cake_vx = 2. * dist_x / JUMP_TIME_TO_PEAK; // TODO: this is not correct if the crosshair is supposed to be the apex of the parabola
+            let cake_vy = f32::sqrt(-2. * dist_y * gravity.0.y);
+            commands
+                .spawn_bundle(SpriteBundle {
+                    texture: sprites.cake.clone(),
+                    transform: Transform::from_xyz(cake_x, cake_y, 5.),
+                    ..Default::default()
+                })
+                .insert_bundle(DynamicBoxBundle {
+                    pos: Pos(Vec2::new(cake_x, cake_y)),
+                    collider: BoxCollider {
+                        size: Vec2::new(CAKE_SIZE, CAKE_SIZE),
+                    },
+                    vel: Vel(Vec2::new(cake_vx, cake_vy)),
+                    ..Default::default()
+                })
+                .insert(Cake)
+                .insert(Checksum::default())
+                .insert(Rollback::new(rip.next_id()))
+                .insert(RoundEntity);
+        }
+    }
 }
 
-const IDLE_THRESH: f32 = 0.01;
-const LAND_FRAMES: usize = 3;
 /// Needs to happen before input
 pub fn update_attacker_state(
     // todo: would maybe be cleaner to just expose one resource, that includes dynamics as well
@@ -373,6 +396,24 @@ pub fn move_attackers(
         // let bounds = (ARENA_SIZE - CUBE_SIZE) * 0.5;
         // t.translation.x = t.translation.x.clamp(-bounds, bounds);
         // t.translation.y = t.translation.y.clamp(-bounds, bounds);
+    }
+}
+
+pub fn move_crosshair(
+    input_query: Query<&DefenderControls>,
+    mut crosshair_query: Query<&mut Transform, With<Crosshair>>,
+) {
+    let mut hor = 0.;
+    let mut vert = 0.;
+
+    for c in input_query.iter() {
+        hor = c.horizontal;
+        vert = c.vertical;
+    }
+
+    for mut t in crosshair_query.iter_mut() {
+        t.translation.x += hor * CROSSHAIR_SPEED;
+        t.translation.y += vert * CROSSHAIR_SPEED;
     }
 }
 
