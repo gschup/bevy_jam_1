@@ -6,6 +6,12 @@ pub struct Attacker {
     pub handle: usize,
 }
 
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct Defender {
+    pub handle: usize,
+}
+
 // cleaned up after every round
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]
@@ -17,9 +23,17 @@ pub struct GameEntity;
 
 #[derive(Default, Reflect, Component)]
 #[reflect(Component)]
-pub struct PlatformerControls {
+pub struct AttackerControls {
     pub vertical: f32,
     pub horizontal: f32,
+}
+
+#[derive(Default, Reflect, Component)]
+#[reflect(Component)]
+pub struct DefenderControls {
+    pub vertical: f32,
+    pub horizontal: f32,
+    pub fire: bool,
 }
 
 #[derive(Clone, Copy, Component, Reflect, Debug, PartialEq, Eq)]
@@ -75,5 +89,28 @@ impl AttackerState {
 impl Default for AttackerState {
     fn default() -> Self {
         Self::Idle(0)
+    }
+}
+
+// the usize counts the number of frames the defender has been in that state
+#[derive(Clone, Copy, Component, Reflect, Debug)]
+#[reflect(Component)]
+pub enum DefenderState {
+    Idle(usize),
+    Fire(usize),
+}
+
+impl Default for DefenderState {
+    fn default() -> Self {
+        Self::Idle(0)
+    }
+}
+
+impl DefenderState {
+    pub fn get_frame(&self) -> usize {
+        match self {
+            DefenderState::Idle(f) => *f,
+            DefenderState::Fire(f) => *f,
+        }
     }
 }

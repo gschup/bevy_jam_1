@@ -18,10 +18,11 @@ const INPUT_ACT: u8 = 0b10000;
 
 const GROUND: Color = Color::rgb(0.5, 0.5, 0.5);
 
-const PLAYER_SIZE: f32 = 24.;
+const ATTACKER_SIZE: f32 = 24.;
 const MAX_SPEED: f32 = 100.;
-pub const JUMP_HEIGHT: f32 = 2. * PLAYER_SIZE;
+pub const JUMP_HEIGHT: f32 = 2. * ATTACKER_SIZE;
 pub const JUMP_TIME_TO_PEAK: f32 = 1.;
+const DEFENDER_SIZE: f32 = 168.;
 const GROUND_LEVEL: f32 = -100.;
 const NUM_ROUNDS: u32 = 2;
 const FRAMES_PER_SPRITE: usize = 10; // TODO: variable frame length per animation and per frame in animation

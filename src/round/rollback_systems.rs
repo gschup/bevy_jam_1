@@ -7,12 +7,12 @@ use crate::{
     menu::win::MatchResult,
     physics::prelude::*,
     round::{prelude::*, resources::Input},
-    AppState, SpriteAssets, NUM_PLAYERS,
+    AppState, AttackerAssets, NUM_PLAYERS,
 };
 
 use super::{
-    GROUND, GROUND_LEVEL, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED,
-    NUM_ROUNDS, PLAYER_SIZE,
+    ATTACKER_SIZE, DEFENDER_SIZE, GROUND, GROUND_LEVEL, INPUT_ACT, INPUT_DOWN, INPUT_LEFT,
+    INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED, NUM_ROUNDS,
 };
 
 const INTERLUDE_LENGTH: u32 = 60;
@@ -67,17 +67,22 @@ pub fn spawn_world(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) 
         .insert(RoundEntity);
 }
 
-pub fn spawn_players(
+pub fn spawn_attackers(
     mut commands: Commands,
     mut rip: ResMut<RollbackIdProvider>,
-    sprites: Res<SpriteAssets>,
+    sprites: Res<AttackerAssets>,
+    round_data: Res<RoundData>,
 ) {
     for handle in 0..NUM_PLAYERS {
-        let x = (2. * handle as f32 - 1.) * 20.;
+        // this player will be the defender instead
+        if handle == round_data.cur_round as usize {
+            continue;
+        }
+        let x = 0.;
         let y = 0.;
         commands
             .spawn_bundle(SpriteSheetBundle {
-                transform: Transform::from_xyz(x, y, 1.),
+                transform: Transform::from_xyz(x, y, (handle + 1) as f32),
                 sprite: TextureAtlasSprite::new(0),
                 texture_atlas: sprites.janitor_idle.clone(),
                 ..Default::default()
@@ -85,18 +90,52 @@ pub fn spawn_players(
             .insert_bundle(DynamicBoxBundle {
                 pos: Pos(Vec2::new(x, y)),
                 collider: BoxCollider {
-                    size: Vec2::new(PLAYER_SIZE / 2., PLAYER_SIZE),
+                    size: Vec2::new(ATTACKER_SIZE / 2., ATTACKER_SIZE),
                 },
                 ..Default::default()
             })
             .insert(Attacker { handle })
             .insert(AttackerState::Idle(0))
             .insert(FacingDirection::Right)
-            .insert(PlatformerControls::default())
+            .insert(AttackerControls::default())
             .insert(Checksum::default())
             .insert(Rollback::new(rip.next_id()))
             .insert(RoundEntity);
     }
+}
+
+const DEF_X_POS: f32 = 250.;
+pub fn spawn_defender(
+    mut commands: Commands,
+    mut rip: ResMut<RollbackIdProvider>,
+    sprites: Res<AttackerAssets>,
+    round_data: Res<RoundData>,
+) {
+    let x = DEF_X_POS;
+    let y = GROUND_LEVEL + DEFENDER_SIZE / 2.;
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            transform: Transform::from_xyz(x, y, 1.),
+            sprite: TextureAtlasSprite::new(0),
+            texture_atlas: sprites.janitor_idle.clone(),
+            ..Default::default()
+        })
+        .insert_bundle(StaticBoxBundle {
+            pos: Pos(Vec2::new(x, y)),
+            collider: BoxCollider {
+                size: Vec2::new(DEFENDER_SIZE, DEFENDER_SIZE),
+            },
+            ..Default::default()
+        })
+        .insert(Defender {
+            handle: round_data.cur_round as usize,
+        })
+        .insert(DefenderState::Idle(0))
+        .insert(FacingDirection::Right)
+        .insert(DefenderControls::default())
+        .insert(Checksum::default())
+        .insert(Rollback::new(rip.next_id()))
+        .insert(RoundEntity);
 }
 
 pub fn start_round(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
@@ -109,6 +148,27 @@ pub fn start_round(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundS
  * ROUND UPDATE
  */
 
+pub fn update_defender_state(mut query: Query<(&DefenderControls, &mut DefenderState)>) {
+    for (contr, mut state) in query.iter_mut() {
+        match *state {
+            DefenderState::Idle(ref mut f) => {
+                if contr.fire {
+                    *state = DefenderState::Fire(0);
+                    continue;
+                }
+                *f += 1;
+            }
+            DefenderState::Fire(ref mut f) => {
+                if *f >= 40 {
+                    *state = DefenderState::Idle(0);
+                    continue;
+                }
+                *f += 1;
+            }
+        }
+    }
+}
+
 const IDLE_THRESH: f32 = 0.01;
 const LAND_FRAMES: usize = 3;
 /// Needs to happen before input
@@ -120,7 +180,7 @@ pub fn update_attacker_state(
     mut query: Query<(
         Entity,
         &Vel,
-        &PlatformerControls,
+        &AttackerControls,
         &mut AttackerState,
         &mut FacingDirection,
     )>,
@@ -209,19 +269,18 @@ pub fn update_attacker_state(
     }
 }
 
-/// Needs to happen before all systems that use PlatformerControls, or it will desync
-pub fn apply_inputs(
-    mut query: Query<(&mut PlatformerControls, &Attacker)>,
+pub fn apply_attacker_inputs(
+    mut query: Query<(&mut AttackerControls, &Attacker)>,
     inputs: Res<Vec<(Input, InputStatus)>>,
 ) {
-    for (mut c, p) in query.iter_mut() {
-        let input = match inputs[p.handle].1 {
-            InputStatus::Confirmed => inputs[p.handle].0.inp,
-            InputStatus::Predicted => inputs[p.handle].0.inp,
+    for (mut controls, attacker) in query.iter_mut() {
+        let input = match inputs[attacker.handle].1 {
+            InputStatus::Confirmed => inputs[attacker.handle].0.inp,
+            InputStatus::Predicted => inputs[attacker.handle].0.inp,
             InputStatus::Disconnected => 0, // disconnected players do nothing
         };
 
-        c.horizontal = if input & INPUT_LEFT != 0 && input & INPUT_RIGHT == 0 {
+        controls.horizontal = if input & INPUT_LEFT != 0 && input & INPUT_RIGHT == 0 {
             -1. // right positive
         } else if input & INPUT_LEFT == 0 && input & INPUT_RIGHT != 0 {
             1.
@@ -229,7 +288,7 @@ pub fn apply_inputs(
             0.
         };
 
-        c.vertical = if input & INPUT_DOWN != 0 && input & INPUT_UP == 0 {
+        controls.vertical = if input & INPUT_DOWN != 0 && input & INPUT_UP == 0 {
             -1. // up positive
         } else if input & INPUT_DOWN == 0 && input & INPUT_UP != 0 {
             1.
@@ -239,8 +298,39 @@ pub fn apply_inputs(
     }
 }
 
-pub fn move_players(
-    mut query: Query<(&mut Vel, &AttackerState, &PlatformerControls), With<Rollback>>,
+pub fn apply_defender_inputs(
+    mut query: Query<(&mut DefenderControls, &Defender)>,
+    inputs: Res<Vec<(Input, InputStatus)>>,
+) {
+    for (mut controls, def) in query.iter_mut() {
+        let input = match inputs[def.handle].1 {
+            InputStatus::Confirmed => inputs[def.handle].0.inp,
+            InputStatus::Predicted => inputs[def.handle].0.inp,
+            InputStatus::Disconnected => 0, // disconnected players do nothing
+        };
+
+        controls.horizontal = if input & INPUT_LEFT != 0 && input & INPUT_RIGHT == 0 {
+            -1. // right positive
+        } else if input & INPUT_LEFT == 0 && input & INPUT_RIGHT != 0 {
+            1.
+        } else {
+            0.
+        };
+
+        controls.vertical = if input & INPUT_DOWN != 0 && input & INPUT_UP == 0 {
+            -1. // up positive
+        } else if input & INPUT_DOWN == 0 && input & INPUT_UP != 0 {
+            1.
+        } else {
+            0.
+        };
+
+        controls.fire = input & INPUT_ACT != 0;
+    }
+}
+
+pub fn move_attackers(
+    mut query: Query<(&mut Vel, &AttackerState, &AttackerControls), With<Rollback>>,
     gravity: Res<Gravity>,
 ) {
     for (mut vel, state, controls) in query.iter_mut() {

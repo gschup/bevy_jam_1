@@ -64,26 +64,37 @@ pub struct FontAssets {
 }
 
 #[derive(AssetCollection)]
-pub struct SpriteAssets {
+pub struct AttackerAssets {
     // if the sheet would have padding, we could set that with `padding_x` and `padding_y`
-    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
-    #[asset(path = "sprites/janitor/janitor_idle.png")]
+    #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 2, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_idle_white.png")]
     janitor_idle: Handle<TextureAtlas>,
-    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
-    #[asset(path = "sprites/janitor/janitor_walk.png")]
+    #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 2, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_walk_white.png")]
     janitor_walk: Handle<TextureAtlas>,
-    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
-    #[asset(path = "sprites/janitor/janitor_fall.png")]
+    #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 2, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_fall_white.png")]
     janitor_fall: Handle<TextureAtlas>,
-    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
+    #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 2, rows = 1))]
     #[asset(path = "sprites/janitor/janitor_jump.png")]
     janitor_jump: Handle<TextureAtlas>,
-    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 1, rows = 1))]
-    #[asset(path = "sprites/janitor/janitor_land.png")]
+    #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 1, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_land_white.png")]
     janitor_land: Handle<TextureAtlas>,
-    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 2, rows = 1))]
-    #[asset(path = "sprites/janitor/janitor_hit.png")]
+    #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 1, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_hit_white1.png")]
     janitor_hit: Handle<TextureAtlas>,
+}
+
+#[derive(AssetCollection)]
+pub struct DefenderAssets {
+    // if the sheet would have padding, we could set that with `padding_x` and `padding_y`
+    #[asset(texture_atlas(tile_size_x = 168., tile_size_y = 168., columns = 2, rows = 1))]
+    #[asset(path = "sprites/fort/idle_animation_fort.png")]
+    fortress_idle: Handle<TextureAtlas>,
+    #[asset(texture_atlas(tile_size_x = 168., tile_size_y = 168., columns = 4, rows = 1))]
+    #[asset(path = "sprites/fort/fire_animation_fort.png")]
+    fortress_fire: Handle<TextureAtlas>,
 }
 
 #[derive(Debug)]
@@ -101,16 +112,20 @@ fn main() {
         .continue_to_state(AppState::MenuMain)
         .with_collection::<ImageAssets>()
         .with_collection::<FontAssets>()
-        .with_collection::<SpriteAssets>()
+        .with_collection::<AttackerAssets>()
+        .with_collection::<DefenderAssets>()
         .build(&mut app);
 
     GGRSPlugin::<GGRSConfig>::new()
         .with_update_frequency(FPS)
         .with_input_system(input)
         .register_rollback_type::<Attacker>()
+        .register_rollback_type::<Defender>()
         .register_rollback_type::<RoundEntity>()
         .register_rollback_type::<AttackerState>()
-        .register_rollback_type::<PlatformerControls>()
+        .register_rollback_type::<DefenderState>()
+        .register_rollback_type::<AttackerControls>()
+        .register_rollback_type::<DefenderControls>()
         .register_rollback_type::<FrameCount>()
         .register_rollback_type::<Checksum>()
         .register_rollback_type::<RoundState>()
@@ -160,7 +175,8 @@ fn main() {
                         .with_system_set(
                             SystemSet::new()
                                 .with_run_criteria(on_round_start)
-                                .with_system(spawn_players)
+                                .with_system(spawn_attackers)
+                                .with_system(spawn_defender)
                                 .with_system(spawn_world)
                                 .with_system(start_round),
                         )
@@ -169,13 +185,19 @@ fn main() {
                             SystemSet::new()
                                 .with_run_criteria(on_round)
                                 .with_system(update_attacker_state.label(SystemLabel::UpdateState))
+                                .with_system(update_defender_state.label(SystemLabel::UpdateState))
                                 .with_system(
-                                    apply_inputs
+                                    apply_attacker_inputs
                                         .label(SystemLabel::Input)
                                         .after(SystemLabel::UpdateState),
                                 )
                                 .with_system(
-                                    move_players
+                                    apply_defender_inputs
+                                        .label(SystemLabel::Input)
+                                        .after(SystemLabel::UpdateState),
+                                )
+                                .with_system(
+                                    move_attackers
                                         .label(SystemLabel::Move)
                                         .after(SystemLabel::Input),
                                 )
@@ -203,7 +225,7 @@ fn main() {
 
     app.add_plugins(DefaultPlugins)
         .add_state(AppState::AssetLoading)
-        .insert_resource(ClearColor(Color::rgb(0.8, 0.8, 0.8)))
+        .insert_resource(ClearColor(Color::BLACK))
         // physics
         .add_plugin(PhysicsPlugin)
         .add_plugin(LdtkPlugin)
@@ -259,7 +281,9 @@ fn main() {
         // local round
         .add_system_set(SystemSet::on_enter(AppState::RoundLocal).with_system(setup_game))
         .add_system_set(
-            SystemSet::on_update(AppState::RoundLocal).with_system(update_attacker_sprite),
+            SystemSet::on_update(AppState::RoundLocal)
+                .with_system(update_attacker_sprite)
+                .with_system(update_defender_sprite),
         )
         .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
         // online round
@@ -267,6 +291,7 @@ fn main() {
         .add_system_set(
             SystemSet::on_update(AppState::RoundOnline)
                 .with_system(update_attacker_sprite)
+                .with_system(update_defender_sprite)
                 .with_system(print_p2p_events),
         )
         .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game));

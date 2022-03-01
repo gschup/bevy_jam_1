@@ -3,7 +3,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::SessionType;
 use ggrs::{P2PSession, PlayerHandle};
 
-use crate::{menu::connect::LocalHandles, GGRSConfig, SpriteAssets};
+use crate::{menu::connect::LocalHandles, AttackerAssets, DefenderAssets, GGRSConfig};
 
 use super::{
     prelude::*, FRAMES_PER_SPRITE, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
@@ -129,7 +129,7 @@ pub fn update_attacker_sprite(
         &FacingDirection,
         &AttackerState,
     )>,
-    sprites: Res<SpriteAssets>,
+    sprites: Res<AttackerAssets>,
     texture_atlases: Res<Assets<TextureAtlas>>,
 ) {
     for (mut sprite, mut atlas_handle, face_dir, state) in query.iter_mut() {
@@ -139,6 +139,33 @@ pub fn update_attacker_sprite(
             AttackerState::Fall(_) => *atlas_handle = sprites.janitor_fall.clone(),
             AttackerState::Land(_) => *atlas_handle = sprites.janitor_land.clone(),
             AttackerState::Walk(_) => *atlas_handle = sprites.janitor_walk.clone(),
+        }
+
+        let texture_atlas = texture_atlases
+            .get(atlas_handle.as_ref())
+            .expect("TextureAtlas not found.");
+        sprite.index = (state.get_frame() / FRAMES_PER_SPRITE) % texture_atlas.textures.len();
+        sprite.flip_x = match *face_dir {
+            FacingDirection::Left => true,
+            FacingDirection::Right => false,
+        }
+    }
+}
+
+pub fn update_defender_sprite(
+    mut query: Query<(
+        &mut TextureAtlasSprite,
+        &mut Handle<TextureAtlas>,
+        &FacingDirection,
+        &DefenderState,
+    )>,
+    sprites: Res<DefenderAssets>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+) {
+    for (mut sprite, mut atlas_handle, face_dir, state) in query.iter_mut() {
+        match *state {
+            DefenderState::Idle(_) => *atlas_handle = sprites.fortress_idle.clone(),
+            DefenderState::Fire(_) => *atlas_handle = sprites.fortress_fire.clone(),
         }
 
         let texture_atlas = texture_atlases
