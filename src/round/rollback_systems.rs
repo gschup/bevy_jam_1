@@ -123,7 +123,7 @@ pub fn spawn_defender(
         .insert_bundle(StaticBoxBundle {
             pos: Pos(Vec2::new(x, y)),
             collider: BoxCollider {
-                size: Vec2::new(DEFENDER_SIZE, DEFENDER_SIZE),
+                size: Vec2::new(x - 5., y),
             },
             ..Default::default()
         })
@@ -152,9 +152,9 @@ pub fn update_defender_state(
     mut commands: Commands,
     sprites: Res<MiscAssets>,
     mut rip: ResMut<RollbackIdProvider>,
-    mut query: Query<(&DefenderControls, &mut DefenderState)>,
+    mut query: Query<(&Transform, &DefenderControls, &mut DefenderState)>,
 ) {
-    for (contr, mut state) in query.iter_mut() {
+    for (t, contr, mut state) in query.iter_mut() {
         match *state {
             DefenderState::Idle(ref mut f) => {
                 if contr.fire {
@@ -171,10 +171,10 @@ pub fn update_defender_state(
                 }
                 // fire the cake after the first two frames of animation have played
                 if *f == FRAMES_PER_SPRITE * 2 {
-                    let cake_spawn_x = 0.;
-                    let cake_spawn_y = 0.;
-                    let cake_init_vx = 100.;
-                    let cake_init_vy = 100.;
+                    let cake_spawn_x = t.translation.x - DEFENDER_SIZE / 2.0;
+                    let cake_spawn_y = t.translation.y;
+                    let cake_init_vx = -400.;
+                    let cake_init_vy = 500.;
                     commands
                         .spawn_bundle(SpriteBundle {
                             texture: sprites.cake.clone(),
