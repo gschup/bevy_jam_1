@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::GGRSPlugin;
-use checksum::{checksum_attackers, Checksum};
+use checksum::{checksum_attackers, checksum_cakes, Checksum};
 use ggrs::Config;
 use menu::{
     connect::{create_matchbox_socket, update_matchbox_socket},
@@ -52,9 +52,11 @@ enum SystemLabel {
 }
 
 #[derive(AssetCollection)]
-pub struct ImageAssets {
+pub struct MiscAssets {
     #[asset(path = "images/logo.png")]
     pub game_logo: Handle<Image>,
+    #[asset(path = "sprites/cake/cake.png")]
+    pub cake: Handle<Image>,
 }
 
 #[derive(AssetCollection)]
@@ -110,7 +112,7 @@ fn main() {
 
     AssetLoader::new(AppState::AssetLoading)
         .continue_to_state(AppState::MenuMain)
-        .with_collection::<ImageAssets>()
+        .with_collection::<MiscAssets>()
         .with_collection::<FontAssets>()
         .with_collection::<AttackerAssets>()
         .with_collection::<DefenderAssets>()
@@ -132,6 +134,7 @@ fn main() {
         .register_rollback_type::<RoundData>()
         .register_rollback_type::<Transform>()
         .register_rollback_type::<FacingDirection>()
+        .register_rollback_type::<Cake>()
         // physics types
         .register_rollback_type::<Pos>()
         .register_rollback_type::<Vel>()
@@ -221,7 +224,9 @@ fn main() {
                 .with_stage_after(
                     ROLLBACK_SYSTEMS,
                     CHECKSUM_UPDATE,
-                    SystemStage::parallel().with_system(checksum_attackers),
+                    SystemStage::parallel()
+                        .with_system(checksum_attackers)
+                        .with_system(checksum_cakes),
                 ),
         )
         .build(&mut app);

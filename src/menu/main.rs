@@ -3,8 +3,8 @@ use bevy_ggrs::SessionType;
 use ggrs::{PlayerType, SessionBuilder};
 
 use crate::{
-    AppState, FontAssets, GGRSConfig, ImageAssets, BUTTON_TEXT, CHECK_DISTANCE, FPS,
-    HOVERED_BUTTON, INPUT_DELAY, MAX_PREDICTION, NORMAL_BUTTON, NUM_PLAYERS, PRESSED_BUTTON,
+    AppState, FontAssets, GGRSConfig, MiscAssets, BUTTON_TEXT, CHECK_DISTANCE, FPS, HOVERED_BUTTON,
+    INPUT_DELAY, MAX_PREDICTION, NORMAL_BUTTON, NUM_PLAYERS, PRESSED_BUTTON,
 };
 
 use super::connect::LocalHandles;
@@ -21,7 +21,7 @@ pub enum MenuMainBtn {
 
 pub fn setup_ui(
     mut commands: Commands,
-    image_assets: Res<ImageAssets>,
+    image_assets: Res<MiscAssets>,
     font_assets: Res<FontAssets>,
 ) {
     // ui camera

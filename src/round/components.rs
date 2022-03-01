@@ -12,6 +12,10 @@ pub struct Defender {
     pub handle: usize,
 }
 
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct Cake;
+
 // cleaned up after every round
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]

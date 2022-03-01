@@ -3,7 +3,7 @@ use bevy_ggrs::Rollback;
 
 use crate::{
     physics::{components::Vel, prelude::Pos},
-    round::prelude::Attacker,
+    round::prelude::{Attacker, Cake},
 };
 
 #[derive(Default, Reflect, Hash, Component)]
@@ -17,7 +17,28 @@ pub fn checksum_attackers(
 ) {
     for (t, v, p, mut checksum) in query.iter_mut() {
         let translation = t.translation;
-        // println!("Attacker: translation: {translation:?}, vel: {v:?}, pos: {p:?}",);
+        let mut bytes = Vec::with_capacity(20);
+        bytes.extend_from_slice(&translation.x.to_le_bytes());
+        bytes.extend_from_slice(&translation.y.to_le_bytes());
+        bytes.extend_from_slice(&translation.z.to_le_bytes()); // this z will probably never matter, but removing it probably also will not matter...
+
+        // TODO: checksum more physics types here
+        bytes.extend_from_slice(&v.0.x.to_le_bytes());
+        bytes.extend_from_slice(&v.0.y.to_le_bytes());
+
+        bytes.extend_from_slice(&p.0.x.to_le_bytes());
+        bytes.extend_from_slice(&p.0.y.to_le_bytes());
+
+        // naive checksum implementation
+        checksum.value = fletcher16(&bytes);
+    }
+}
+
+pub fn checksum_cakes(
+    mut query: Query<(&Transform, &Vel, &Pos, &mut Checksum), (With<Cake>, With<Rollback>)>,
+) {
+    for (t, v, p, mut checksum) in query.iter_mut() {
+        let translation = t.translation;
         let mut bytes = Vec::with_capacity(20);
         bytes.extend_from_slice(&translation.x.to_le_bytes());
         bytes.extend_from_slice(&translation.y.to_le_bytes());

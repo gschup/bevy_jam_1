@@ -25,4 +25,5 @@ pub const JUMP_TIME_TO_PEAK: f32 = 1.;
 const DEFENDER_SIZE: f32 = 168.;
 const GROUND_LEVEL: f32 = -100.;
 const NUM_ROUNDS: u32 = 2;
+const CAKE_SIZE: f32 = 16.;
 const FRAMES_PER_SPRITE: usize = 10; // TODO: variable frame length per animation and per frame in animation

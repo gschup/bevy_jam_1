@@ -7,12 +7,12 @@ use crate::{
     menu::win::MatchResult,
     physics::prelude::*,
     round::{prelude::*, resources::Input},
-    AppState, AttackerAssets, NUM_PLAYERS,
+    AppState, AttackerAssets, MiscAssets, NUM_PLAYERS,
 };
 
 use super::{
-    ATTACKER_SIZE, DEFENDER_SIZE, GROUND, GROUND_LEVEL, INPUT_ACT, INPUT_DOWN, INPUT_LEFT,
-    INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED, NUM_ROUNDS, FRAMES_PER_SPRITE,
+    ATTACKER_SIZE, CAKE_SIZE, DEFENDER_SIZE, FRAMES_PER_SPRITE, GROUND, GROUND_LEVEL, INPUT_ACT,
+    INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP, JUMP_HEIGHT, MAX_SPEED, NUM_ROUNDS,
 };
 
 const INTERLUDE_LENGTH: u32 = 60;
@@ -148,7 +148,12 @@ pub fn start_round(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundS
  * ROUND UPDATE
  */
 
-pub fn update_defender_state(mut query: Query<(&DefenderControls, &mut DefenderState)>) {
+pub fn update_defender_state(
+    mut commands: Commands,
+    sprites: Res<MiscAssets>,
+    mut rip: ResMut<RollbackIdProvider>,
+    mut query: Query<(&DefenderControls, &mut DefenderState)>,
+) {
     for (contr, mut state) in query.iter_mut() {
         match *state {
             DefenderState::Idle(ref mut f) => {
@@ -163,6 +168,31 @@ pub fn update_defender_state(mut query: Query<(&DefenderControls, &mut DefenderS
                 if *f >= FRAMES_PER_SPRITE * 4 {
                     *state = DefenderState::Idle(0);
                     continue;
+                }
+                // fire the cake after the first two frames of animation have played
+                if *f == FRAMES_PER_SPRITE * 2 {
+                    let cake_spawn_x = 0.;
+                    let cake_spawn_y = 0.;
+                    let cake_init_vx = 100.;
+                    let cake_init_vy = 100.;
+                    commands
+                        .spawn_bundle(SpriteBundle {
+                            texture: sprites.cake.clone(),
+                            transform: Transform::from_xyz(cake_spawn_x, cake_spawn_y, 5.),
+                            ..Default::default()
+                        })
+                        .insert_bundle(DynamicBoxBundle {
+                            pos: Pos(Vec2::new(cake_spawn_x, cake_spawn_y)),
+                            collider: BoxCollider {
+                                size: Vec2::new(CAKE_SIZE, CAKE_SIZE),
+                            },
+                            vel: Vel(Vec2::new(cake_init_vx, cake_init_vy)),
+                            ..Default::default()
+                        })
+                        .insert(Cake)
+                        .insert(Checksum::default())
+                        .insert(Rollback::new(rip.next_id()))
+                        .insert(RoundEntity);
                 }
                 *f += 1;
             }

@@ -29,7 +29,7 @@ pub fn input(
         if keyboard_input.pressed(KeyCode::D) {
             inp |= INPUT_RIGHT;
         }
-        if keyboard_input.just_pressed(KeyCode::Space) {
+        if keyboard_input.pressed(KeyCode::Space) {
             inp |= INPUT_ACT;
         }
     } else {
@@ -45,7 +45,7 @@ pub fn input(
         if keyboard_input.pressed(KeyCode::Right) {
             inp |= INPUT_RIGHT;
         }
-        if keyboard_input.just_pressed(KeyCode::RShift) {
+        if keyboard_input.pressed(KeyCode::RShift) {
             inp |= INPUT_ACT;
         }
     }
