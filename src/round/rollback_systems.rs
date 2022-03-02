@@ -81,7 +81,7 @@ pub fn spawn_attackers(
         let y = 0.;
         commands
             .spawn_bundle(SpriteSheetBundle {
-                transform: Transform::from_xyz(x, y, (handle + 1) as f32),
+                transform: Transform::from_xyz(x, y, (handle + 2) as f32),
                 sprite: TextureAtlasSprite::new(0),
                 texture_atlas: sprites.janitor_idle.clone(),
                 ..Default::default()
@@ -194,12 +194,12 @@ pub fn update_defender_state(
         if should_shoot {
             let dist_x = (t.translation.x - cake_x).min(0.);
             let dist_y = (t.translation.y - cake_y).max(0.);
-            let cake_vx = 2. * dist_x / JUMP_TIME_TO_PEAK; // TODO: this is not correct if the crosshair is supposed to be the apex of the parabola
+            let cake_vx = 2. * dist_x / JUMP_TIME_TO_PEAK; // TODO: is this correct correct if the crosshair is supposed to be the apex of the parabola?
             let cake_vy = f32::sqrt(-2. * dist_y * gravity.0.y);
             commands
                 .spawn_bundle(SpriteBundle {
                     texture: sprites.cake.clone(),
-                    transform: Transform::from_xyz(cake_x, cake_y, 5.),
+                    transform: Transform::from_xyz(cake_x, cake_y, 10.),
                     ..Default::default()
                 })
                 .insert_bundle(DynamicBoxBundle {

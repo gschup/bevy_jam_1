@@ -55,6 +55,8 @@ enum SystemLabel {
 pub struct MiscAssets {
     #[asset(path = "sprites/misc/title.png")]
     pub game_title: Handle<Image>,
+    #[asset(path = "sprites/misc/background.png")]
+    pub background: Handle<Image>,
     #[asset(path = "sprites/misc/cake.png")]
     pub cake: Handle<Image>,
     #[asset(path = "sprites/misc/crosshair.png")]

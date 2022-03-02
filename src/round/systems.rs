@@ -3,7 +3,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::SessionType;
 use ggrs::{P2PSession, PlayerHandle};
 
-use crate::{menu::connect::LocalHandles, AttackerAssets, DefenderAssets, GGRSConfig};
+use crate::{menu::connect::LocalHandles, AttackerAssets, DefenderAssets, GGRSConfig, MiscAssets};
 
 use super::{
     prelude::*, FRAMES_PER_SPRITE, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
@@ -95,13 +95,20 @@ pub fn on_round_end(state: Res<RoundState>) -> ShouldRun {
     }
 }
 
-pub fn setup_game(mut commands: Commands) {
+pub fn setup_game(mut commands: Commands, misc_sprites: Res<MiscAssets>) {
     commands.insert_resource(RoundState::InterludeStart);
     commands.insert_resource(FrameCount::default());
     commands.insert_resource(RoundData::default());
     let mut cam = OrthographicCameraBundle::new_2d();
     cam.orthographic_projection.scale = 1. / 2.; // Asset pixels are 2 times bigger than "device points"
     commands.spawn_bundle(cam).insert(GameEntity);
+
+    commands
+        .spawn_bundle(SpriteBundle {
+            texture: misc_sprites.background.clone(),
+            ..Default::default()
+        })
+        .insert(GameEntity);
 }
 
 pub fn print_p2p_events(mut session: ResMut<P2PSession<GGRSConfig>>) {
