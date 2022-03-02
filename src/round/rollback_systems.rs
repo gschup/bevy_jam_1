@@ -222,8 +222,8 @@ pub fn update_defender_state(
 pub fn update_attacker_state(
     // todo: would maybe be cleaner to just expose one resource, that includes dynamics as well
     // just check against statics (ground) for now
-    contacts: ResMut<Contacts>,
-    static_contacts: ResMut<StaticContacts>,
+    contacts: Res<Contacts>,
+    static_contacts: Res<StaticContacts>,
     mut query: Query<(
         Entity,
         &Vel,
@@ -424,6 +424,37 @@ pub fn move_crosshair(
     for mut t in crosshair_query.iter_mut() {
         t.translation.x += hor * CROSSHAIR_SPEED;
         t.translation.y += vert * CROSSHAIR_SPEED;
+    }
+}
+
+pub fn cake_collision(
+    mut commands: Commands,
+    contacts: Res<Contacts>,
+    static_contacts: Res<StaticContacts>,
+    mut attackers: Query<(Entity, &mut AttackerState)>,
+    cakes: Query<Entity, With<Cake>>,
+) {
+    for cake in cakes.iter() {
+        //check if they collide with an attacker
+        let mut hit = false;
+        for (attacker, mut state) in attackers.iter_mut() {
+            if contacts
+                .0
+                .iter()
+                .any(|(a, c, _)| *a == attacker && *c == cake)
+            {
+                *state = AttackerState::Hit(0);
+                commands.entity(cake).despawn_recursive();
+                hit = true;
+            }
+        }
+        // check for ground contact
+        if !hit {
+            if static_contacts.0.iter().any(|(c, _, _)| *c == cake) {
+                //TODO: MAKE SPLAT
+                commands.entity(cake).despawn_recursive();
+            }
+        }
     }
 }
 
