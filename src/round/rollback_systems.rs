@@ -14,7 +14,7 @@ use super::{
     ATTACKER_SIZE, CAKE_SIZE, CROSSHAIR_SPEED, DEFENDER_SIZE, DEF_X_POS, FRAMES_PER_SPRITE, GROUND,
     GROUND_LEVEL, IDLE_THRESH, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
     INTERLUDE_LENGTH, JUMP_HEIGHT, JUMP_TIME_TO_PEAK, LAND_FRAMES, MAX_SPEED, NUM_ROUNDS,
-    ROUND_LENGTH,
+    ROUND_LENGTH, STUN_FRAMES,
 };
 
 /*
@@ -312,6 +312,13 @@ pub fn update_attacker_state(
                 }
                 *f += 1;
             }
+            AttackerState::Hit(ref mut f) => {
+                if *f > STUN_FRAMES {
+                    *state = AttackerState::Idle(0);
+                    continue;
+                }
+                *f += 1;
+            }
         };
     }
 }
@@ -383,7 +390,10 @@ pub fn move_attackers(
     for (mut vel, state, controls) in query.iter_mut() {
         // just set horizontal velocity for now
         // this totally overwrites any velocity on the x axis, which might not be ideal...
-        vel.0.x = controls.horizontal * MAX_SPEED;
+        vel.0.x = 0.;
+        if state.can_walk() {
+            vel.0.x = controls.horizontal * MAX_SPEED;
+        }
 
         if controls.vertical > 0. && state.can_jump() {
             let v0 = f32::sqrt(-2. * JUMP_HEIGHT * gravity.0.y);
