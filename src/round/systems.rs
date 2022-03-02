@@ -139,6 +139,7 @@ pub fn update_attacker_sprite(
             AttackerState::Fall(_) => *atlas_handle = sprites.janitor_fall.clone(),
             AttackerState::Land(_) => *atlas_handle = sprites.janitor_land.clone(),
             AttackerState::Walk(_) => *atlas_handle = sprites.janitor_walk.clone(),
+            AttackerState::Hit(_) => *atlas_handle = sprites.janitor_hit.clone(),
         }
 
         let texture_atlas = texture_atlases

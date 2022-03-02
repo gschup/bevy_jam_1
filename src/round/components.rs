@@ -66,13 +66,14 @@ pub enum AttackerState {
     Fall(usize),
     Land(usize),
     Walk(usize),
+    Hit(usize),
 }
 
 impl AttackerState {
-    pub fn is_grounded(&self) -> bool {
+    pub fn can_walk(&self) -> bool {
         match self {
-            AttackerState::Idle(..) | AttackerState::Land(..) | AttackerState::Walk(..) => true,
-            _ => false,
+            AttackerState::Hit(..) => true,
+            _ => true,
         }
     }
 
@@ -90,6 +91,7 @@ impl AttackerState {
             AttackerState::Fall(f) => *f,
             AttackerState::Land(f) => *f,
             AttackerState::Walk(f) => *f,
+            AttackerState::Hit(f) => *f,
         }
     }
 }

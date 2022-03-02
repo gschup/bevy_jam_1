@@ -31,9 +31,12 @@ pub const JUMP_TIME_TO_PEAK: f32 = 1.;
 const DEFENDER_SIZE: f32 = 168.;
 const GROUND_LEVEL: f32 = -100.;
 const CAKE_SIZE: f32 = 16.;
+
+// controls
+const CROSSHAIR_SPEED: f32 = 2.;
 const IDLE_THRESH: f32 = 0.01;
 const LAND_FRAMES: usize = 3;
-const CROSSHAIR_SPEED: f32 = 2.;
+const STUN_FRAMES: usize = 60;
 
 // round params
 const NUM_ROUNDS: u32 = 2;
