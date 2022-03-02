@@ -207,6 +207,7 @@ fn main() {
                                 .with_run_criteria(on_round)
                                 .with_system(move_attackers)
                                 .with_system(move_crosshair)
+                                .with_system(cake_collision)
                                 .label(SystemLabel::Move)
                                 .after(SystemLabel::Input),
                         )

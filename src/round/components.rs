@@ -72,7 +72,7 @@ pub enum AttackerState {
 impl AttackerState {
     pub fn can_walk(&self) -> bool {
         match self {
-            AttackerState::Hit(..) => true,
+            AttackerState::Hit(..) => false,
             _ => true,
         }
     }

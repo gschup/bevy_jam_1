@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 bevy_asset_loader = { version = "0.8", features = ["render"] }
-bevy = { version = "0.6", default-features = false, features = ["render", "png", "bevy_winit"] }
+bevy = { version = "0.6", default-features = false, features = ["render", "png", "bevy_winit", "x11"] }
 bytemuck = {version="1.7.3", features= ["derive"]}
 ggrs = { version = "0.9", features=["sync-send"] }
 bevy_ggrs = "0.9"
