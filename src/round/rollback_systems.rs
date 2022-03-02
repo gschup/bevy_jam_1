@@ -5,7 +5,7 @@ use ggrs::InputStatus;
 use crate::{
     checksum::Checksum,
     menu::win::MatchResult,
-    physics::{prelude::*, PIXELS_PER_METER},
+    physics::prelude::*,
     round::{prelude::*, resources::Input},
     AppState, AttackerAssets, DefenderAssets, MiscAssets, NUM_PLAYERS,
 };
