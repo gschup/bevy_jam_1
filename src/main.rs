@@ -53,8 +53,8 @@ enum SystemLabel {
 
 #[derive(AssetCollection)]
 pub struct MiscAssets {
-    #[asset(path = "sprites/misc/logo.png")]
-    pub game_logo: Handle<Image>,
+    #[asset(path = "sprites/misc/title.png")]
+    pub game_title: Handle<Image>,
     #[asset(path = "sprites/misc/cake.png")]
     pub cake: Handle<Image>,
     #[asset(path = "sprites/misc/crosshair.png")]
@@ -237,78 +237,81 @@ fn main() {
         )
         .build(&mut app);
 
-    app.add_plugins(DefaultPlugins)
-        .add_state(AppState::AssetLoading)
-        .insert_resource(ClearColor(Color::BLACK))
-        // physics
-        .add_plugin(PhysicsPlugin)
-        .add_plugin(LdtkPlugin)
-        .insert_resource(LevelSelection::Index(0))
-        // main menu
-        .add_system_set(SystemSet::on_enter(AppState::MenuMain).with_system(menu::main::setup_ui))
-        .add_system_set(
-            SystemSet::on_update(AppState::MenuMain)
-                .with_system(menu::main::btn_visuals)
-                .with_system(menu::main::btn_listeners),
-        )
-        .add_system_set(SystemSet::on_exit(AppState::MenuMain).with_system(menu::main::cleanup_ui))
-        //online menu
-        .add_system_set(
-            SystemSet::on_enter(AppState::MenuOnline).with_system(menu::online::setup_ui),
-        )
-        .add_system_set(
-            SystemSet::on_update(AppState::MenuOnline)
-                .with_system(update_lobby_id)
-                .with_system(update_lobby_id_display)
-                .with_system(update_lobby_btn)
-                .with_system(menu::online::btn_visuals)
-                .with_system(menu::online::btn_listeners),
-        )
-        .add_system_set(
-            SystemSet::on_exit(AppState::MenuOnline).with_system(menu::online::cleanup_ui),
-        )
-        // connect menu
-        .add_system_set(
-            SystemSet::on_enter(AppState::MenuConnect)
-                .with_system(create_matchbox_socket)
-                .with_system(menu::connect::setup_ui),
-        )
-        .add_system_set(
-            SystemSet::on_update(AppState::MenuConnect)
-                .with_system(update_matchbox_socket)
-                .with_system(menu::connect::btn_visuals)
-                .with_system(menu::connect::btn_listeners),
-        )
-        .add_system_set(
-            SystemSet::on_exit(AppState::MenuConnect)
-                .with_system(menu::connect::cleanup)
-                .with_system(menu::connect::cleanup_ui),
-        )
-        // win menu
-        .add_system_set(SystemSet::on_enter(AppState::Win).with_system(menu::win::setup_ui))
-        .add_system_set(
-            SystemSet::on_update(AppState::Win)
-                .with_system(menu::win::btn_visuals)
-                .with_system(menu::win::btn_listeners),
-        )
-        .add_system_set(SystemSet::on_exit(AppState::Win).with_system(menu::win::cleanup_ui))
-        // local round
-        .add_system_set(SystemSet::on_enter(AppState::RoundLocal).with_system(setup_game))
-        .add_system_set(
-            SystemSet::on_update(AppState::RoundLocal)
-                .with_system(update_attacker_sprite)
-                .with_system(update_defender_sprite),
-        )
-        .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
-        // online round
-        .add_system_set(SystemSet::on_enter(AppState::RoundOnline).with_system(setup_game))
-        .add_system_set(
-            SystemSet::on_update(AppState::RoundOnline)
-                .with_system(update_attacker_sprite)
-                .with_system(update_defender_sprite)
-                .with_system(print_p2p_events),
-        )
-        .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game));
+    app.insert_resource(WindowDescriptor {
+        width: 1280.0,
+        height: 720.0,
+        title: "A janitor's Nightmare".to_owned(),
+        resizable: false,
+        ..Default::default()
+    })
+    .add_plugins(DefaultPlugins)
+    .add_state(AppState::AssetLoading)
+    .insert_resource(ClearColor(Color::BLACK))
+    // physics
+    .add_plugin(PhysicsPlugin)
+    .add_plugin(LdtkPlugin)
+    .insert_resource(LevelSelection::Index(0))
+    // main menu
+    .add_system_set(SystemSet::on_enter(AppState::MenuMain).with_system(menu::main::setup_ui))
+    .add_system_set(
+        SystemSet::on_update(AppState::MenuMain)
+            .with_system(menu::main::btn_visuals)
+            .with_system(menu::main::btn_listeners),
+    )
+    .add_system_set(SystemSet::on_exit(AppState::MenuMain).with_system(menu::main::cleanup_ui))
+    //online menu
+    .add_system_set(SystemSet::on_enter(AppState::MenuOnline).with_system(menu::online::setup_ui))
+    .add_system_set(
+        SystemSet::on_update(AppState::MenuOnline)
+            .with_system(update_lobby_id)
+            .with_system(update_lobby_id_display)
+            .with_system(update_lobby_btn)
+            .with_system(menu::online::btn_visuals)
+            .with_system(menu::online::btn_listeners),
+    )
+    .add_system_set(SystemSet::on_exit(AppState::MenuOnline).with_system(menu::online::cleanup_ui))
+    // connect menu
+    .add_system_set(
+        SystemSet::on_enter(AppState::MenuConnect)
+            .with_system(create_matchbox_socket)
+            .with_system(menu::connect::setup_ui),
+    )
+    .add_system_set(
+        SystemSet::on_update(AppState::MenuConnect)
+            .with_system(update_matchbox_socket)
+            .with_system(menu::connect::btn_visuals)
+            .with_system(menu::connect::btn_listeners),
+    )
+    .add_system_set(
+        SystemSet::on_exit(AppState::MenuConnect)
+            .with_system(menu::connect::cleanup)
+            .with_system(menu::connect::cleanup_ui),
+    )
+    // win menu
+    .add_system_set(SystemSet::on_enter(AppState::Win).with_system(menu::win::setup_ui))
+    .add_system_set(
+        SystemSet::on_update(AppState::Win)
+            .with_system(menu::win::btn_visuals)
+            .with_system(menu::win::btn_listeners),
+    )
+    .add_system_set(SystemSet::on_exit(AppState::Win).with_system(menu::win::cleanup_ui))
+    // local round
+    .add_system_set(SystemSet::on_enter(AppState::RoundLocal).with_system(setup_game))
+    .add_system_set(
+        SystemSet::on_update(AppState::RoundLocal)
+            .with_system(update_attacker_sprite)
+            .with_system(update_defender_sprite),
+    )
+    .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
+    // online round
+    .add_system_set(SystemSet::on_enter(AppState::RoundOnline).with_system(setup_game))
+    .add_system_set(
+        SystemSet::on_update(AppState::RoundOnline)
+            .with_system(update_attacker_sprite)
+            .with_system(update_defender_sprite)
+            .with_system(print_p2p_events),
+    )
+    .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game));
     // ldtk loading TODO: move to assetLoader plugin?
     //.add_startup_system(load_ldtk_level);
 

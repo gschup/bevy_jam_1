@@ -435,8 +435,8 @@ pub fn cake_collision(
     cakes: Query<Entity, With<Cake>>,
 ) {
     for cake in cakes.iter() {
-        //check if they collide with an attacker
-        let mut hit = false;
+        let mut cake_collided = false;
+        //check for attacker collision
         for (attacker, mut state) in attackers.iter_mut() {
             if contacts
                 .0
@@ -444,16 +444,16 @@ pub fn cake_collision(
                 .any(|(a, c, _)| *a == attacker && *c == cake)
             {
                 *state = AttackerState::Hit(0);
-                commands.entity(cake).despawn_recursive();
-                hit = true;
+                cake_collided = true;
             }
         }
-        // check for ground contact
-        if !hit {
-            if static_contacts.0.iter().any(|(c, _, _)| *c == cake) {
-                //TODO: MAKE SPLAT
-                commands.entity(cake).despawn_recursive();
-            }
+        // check for ground collision
+        if static_contacts.0.iter().any(|(c, _, _)| *c == cake) {
+            cake_collided = true;
+        }
+        // splat
+        if cake_collided {
+            commands.entity(cake).despawn_recursive();
         }
     }
 }

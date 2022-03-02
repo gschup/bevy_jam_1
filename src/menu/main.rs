@@ -49,12 +49,12 @@ pub fn setup_ui(
             // logo
             parent.spawn_bundle(ImageBundle {
                 style: Style {
-                    size: Size::new(Val::Px(500.0), Val::Px(139.0)),
+                    size: Size::new(Val::Px(1104.0), Val::Px(260.0)),
                     margin: Rect::all(Val::Px(16.)),
                     padding: Rect::all(Val::Px(16.)),
                     ..Default::default()
                 },
-                image: image_assets.game_logo.clone().into(),
+                image: image_assets.game_title.clone().into(),
                 ..Default::default()
             });
 
