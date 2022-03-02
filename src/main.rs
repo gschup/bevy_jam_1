@@ -79,8 +79,8 @@ pub struct AttackerAssets {
     #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 2, rows = 1))]
     #[asset(path = "sprites/janitor/janitor_fall_white.png")]
     janitor_fall: Handle<TextureAtlas>,
-    #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 2, rows = 1))]
-    #[asset(path = "sprites/janitor/janitor_jump.png")]
+    #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 1, rows = 1))]
+    #[asset(path = "sprites/janitor/janitor_jump_white.png")]
     janitor_jump: Handle<TextureAtlas>,
     #[asset(texture_atlas(tile_size_x = 26., tile_size_y = 26., columns = 1, rows = 1))]
     #[asset(path = "sprites/janitor/janitor_land_white.png")]
