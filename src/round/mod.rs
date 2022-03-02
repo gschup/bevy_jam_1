@@ -1,5 +1,3 @@
-use bevy::prelude::*;
-
 mod components;
 pub mod resources;
 mod rollback_systems;
@@ -17,9 +15,6 @@ const INPUT_LEFT: u8 = 0b00100;
 const INPUT_RIGHT: u8 = 0b01000;
 const INPUT_ACT: u8 = 0b10000;
 
-// colors
-const GROUND: Color = Color::rgb(0.5, 0.5, 0.5);
-
 // animation params
 const FRAMES_PER_SPRITE: usize = 10; // TODO: variable frame length per animation and per frame in animation
 
@@ -33,7 +28,7 @@ const GROUND_LEVEL: f32 = -100.;
 const CAKE_SIZE: f32 = 16.;
 
 // controls
-const CROSSHAIR_SPEED: f32 = 2.;
+const CROSSHAIR_SPEED: f32 = 3.;
 const IDLE_THRESH: f32 = 0.01;
 const LAND_FRAMES: usize = 3;
 const STUN_FRAMES: usize = 60;

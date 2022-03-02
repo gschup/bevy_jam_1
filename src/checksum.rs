@@ -3,7 +3,7 @@ use bevy_ggrs::Rollback;
 
 use crate::{
     physics::{components::Vel, prelude::Pos},
-    round::prelude::{Attacker, Cake, Crosshair},
+    round::prelude::{Attacker, Cake, Crosshair, Splat},
 };
 
 #[derive(Default, Reflect, Hash, Component)]
@@ -58,6 +58,21 @@ pub fn checksum_cakes(
 
 pub fn checksum_crosshair(
     mut query: Query<(&Transform, &mut Checksum), (With<Crosshair>, With<Rollback>)>,
+) {
+    for (t, mut checksum) in query.iter_mut() {
+        let translation = t.translation;
+        let mut bytes = Vec::with_capacity(12);
+        bytes.extend_from_slice(&translation.x.to_le_bytes());
+        bytes.extend_from_slice(&translation.y.to_le_bytes());
+        bytes.extend_from_slice(&translation.z.to_le_bytes()); // this z will probably never matter, but removing it probably also will not matter...
+
+        // naive checksum implementation
+        checksum.value = fletcher16(&bytes);
+    }
+}
+
+pub fn checksum_splat(
+    mut query: Query<(&Transform, &mut Checksum), (With<Splat>, With<Rollback>)>,
 ) {
     for (t, mut checksum) in query.iter_mut() {
         let translation = t.translation;

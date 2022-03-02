@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::GGRSPlugin;
-use checksum::{checksum_attackers, checksum_cakes, checksum_crosshair, Checksum};
+use checksum::{checksum_attackers, checksum_cakes, checksum_crosshair, checksum_splat, Checksum};
 use ggrs::Config;
 use menu::{
     connect::{create_matchbox_socket, update_matchbox_socket},
@@ -25,6 +25,8 @@ const FPS: usize = 60;
 const MAX_PREDICTION: usize = 12;
 const INPUT_DELAY: usize = 2;
 const CHECK_DISTANCE: usize = 2;
+const SCREEN_X: f32 = 1280.;
+const SCREEN_Y: f32 = 720.;
 
 const DISABLED_BUTTON: Color = Color::rgb(0.8, 0.5, 0.5);
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
@@ -139,6 +141,7 @@ fn main() {
         .register_rollback_type::<Transform>()
         .register_rollback_type::<FacingDirection>()
         .register_rollback_type::<Cake>()
+        .register_rollback_type::<Splat>()
         .register_rollback_type::<Crosshair>()
         // physics types
         .register_rollback_type::<Pos>()
@@ -210,6 +213,7 @@ fn main() {
                                 .with_system(move_attackers)
                                 .with_system(move_crosshair)
                                 .with_system(cake_collision)
+                                .with_system(splat_cleaning)
                                 .label(SystemLabel::Move)
                                 .after(SystemLabel::Input),
                         )
@@ -234,16 +238,17 @@ fn main() {
                     SystemStage::parallel()
                         .with_system(checksum_attackers)
                         .with_system(checksum_cakes)
-                        .with_system(checksum_crosshair),
+                        .with_system(checksum_crosshair)
+                        .with_system(checksum_splat),
                 ),
         )
         .build(&mut app);
 
     app.insert_resource(WindowDescriptor {
-        width: 1280.0,
-        height: 720.0,
+        width: SCREEN_X,
+        height: SCREEN_Y,
         title: "A janitor's Nightmare".to_owned(),
-        resizable: false,
+        resizable: true,
         ..Default::default()
     })
     .add_plugins(DefaultPlugins)

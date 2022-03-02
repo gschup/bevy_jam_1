@@ -7,11 +7,11 @@ use crate::{
     menu::win::MatchResult,
     physics::prelude::*,
     round::{prelude::*, resources::Input},
-    AppState, AttackerAssets, DefenderAssets, MiscAssets, NUM_PLAYERS,
+    AppState, AttackerAssets, DefenderAssets, MiscAssets, NUM_PLAYERS, SCREEN_X, SCREEN_Y,
 };
 
 use super::{
-    ATTACKER_SIZE, CAKE_SIZE, CROSSHAIR_SPEED, DEFENDER_SIZE, DEF_X_POS, FRAMES_PER_SPRITE, GROUND,
+    ATTACKER_SIZE, CAKE_SIZE, CROSSHAIR_SPEED, DEFENDER_SIZE, DEF_X_POS, FRAMES_PER_SPRITE,
     GROUND_LEVEL, IDLE_THRESH, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
     INTERLUDE_LENGTH, JUMP_HEIGHT, JUMP_TIME_TO_PEAK, LAND_FRAMES, MAX_SPEED, NUM_ROUNDS,
     ROUND_LENGTH, STUN_FRAMES,
@@ -47,18 +47,41 @@ pub fn cleanup_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<
 pub fn spawn_world(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
     // todo: could import the body builder from bevy_xpbd to clean this up
     let ground_size = Vec2::new(2000., 2000.); // should just be bigger than the screen
+
+    // ground
     commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                custom_size: Some(ground_size),
-                color: GROUND,
-                ..Default::default()
-            },
-            // using transform for now, could probably just as well use custom size
+        .spawn_bundle(StaticBoxBundle {
+            pos: Pos(Vec2::new(0., -ground_size.y / 2. + GROUND_LEVEL)),
+            collider: BoxCollider { size: ground_size },
             ..Default::default()
         })
-        .insert_bundle(StaticBoxBundle {
-            pos: Pos(Vec2::new(0., -ground_size.y / 2. + GROUND_LEVEL)),
+        .insert(Rollback::new(rip.next_id()))
+        .insert(RoundEntity);
+
+    // left
+    commands
+        .spawn_bundle(StaticBoxBundle {
+            pos: Pos(Vec2::new(-SCREEN_X / 4. - ground_size.y / 2., 0.)),
+            collider: BoxCollider { size: ground_size },
+            ..Default::default()
+        })
+        .insert(Rollback::new(rip.next_id()))
+        .insert(RoundEntity);
+
+    // right
+    commands
+        .spawn_bundle(StaticBoxBundle {
+            pos: Pos(Vec2::new(SCREEN_X / 4. + ground_size.y / 2., 0.)),
+            collider: BoxCollider { size: ground_size },
+            ..Default::default()
+        })
+        .insert(Rollback::new(rip.next_id()))
+        .insert(RoundEntity);
+
+    // up
+    commands
+        .spawn_bundle(StaticBoxBundle {
+            pos: Pos(Vec2::new(0., SCREEN_Y / 4. + ground_size.y / 2.)),
             collider: BoxCollider { size: ground_size },
             ..Default::default()
         })
@@ -424,6 +447,9 @@ pub fn move_crosshair(
     for mut t in crosshair_query.iter_mut() {
         t.translation.x += hor * CROSSHAIR_SPEED;
         t.translation.y += vert * CROSSHAIR_SPEED;
+
+        t.translation.x = t.translation.x.clamp(-SCREEN_X / 2., SCREEN_X / 2.);
+        t.translation.x = t.translation.x.clamp(-SCREEN_Y / 2., SCREEN_Y / 2.);
     }
 }
 
@@ -431,10 +457,11 @@ pub fn cake_collision(
     mut commands: Commands,
     contacts: Res<Contacts>,
     static_contacts: Res<StaticContacts>,
+    mut rip: ResMut<RollbackIdProvider>,
     mut attackers: Query<(Entity, &mut AttackerState)>,
-    cakes: Query<Entity, With<Cake>>,
+    cakes: Query<(Entity, &Transform), With<Cake>>,
 ) {
-    for cake in cakes.iter() {
+    for (cake, t) in cakes.iter() {
         let mut cake_collided = false;
         //check for attacker collision
         for (attacker, mut state) in attackers.iter_mut() {
@@ -448,12 +475,48 @@ pub fn cake_collision(
             }
         }
         // check for ground collision
-        if static_contacts.0.iter().any(|(c, _, _)| *c == cake) {
+        if static_contacts
+            .0
+            .iter()
+            .any(|(c, _, n)| *c == cake && n.y < 0.)
+        {
             cake_collided = true;
         }
         // splat
         if cake_collided {
             commands.entity(cake).despawn_recursive();
+            commands
+                .spawn_bundle(SpriteBundle {
+                    transform: Transform::from_xyz(t.translation.x, GROUND_LEVEL, 10.),
+                    sprite: Sprite {
+                        color: Color::RED,
+                        custom_size: Some(Vec2::new(12., 6.)),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .insert(Splat)
+                .insert(Checksum::default())
+                .insert(Rollback::new(rip.next_id()))
+                .insert(RoundEntity);
+        }
+    }
+}
+
+pub fn splat_cleaning(
+    mut commands: Commands,
+    attackers: Query<(&Transform, &AttackerState), With<Attacker>>,
+    splats: Query<(Entity, &Transform), With<Splat>>,
+) {
+    for (t_attack, state) in attackers.iter() {
+        if !state.can_clean() {
+            continue;
+        }
+
+        for (splat, t_splat) in splats.iter() {
+            if (t_splat.translation.x - t_attack.translation.x).abs() < 1. {
+                commands.entity(splat).despawn_recursive();
+            }
         }
     }
 }

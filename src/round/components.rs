@@ -18,6 +18,10 @@ pub struct Cake;
 
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]
+pub struct Splat;
+
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Crosshair;
 
 // cleaned up after every round
@@ -74,6 +78,13 @@ impl AttackerState {
         match self {
             AttackerState::Hit(..) => false,
             _ => true,
+        }
+    }
+
+    pub fn can_clean(&self) -> bool {
+        match self {
+            AttackerState::Idle(..) | AttackerState::Walk(..) | AttackerState::Land(..) => true,
+            _ => false,
         }
     }
 
