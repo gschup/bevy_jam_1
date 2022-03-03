@@ -7,6 +7,7 @@ use crate::{menu::connect::LocalHandles, AttackerAssets, DefenderAssets, GGRSCon
 
 use super::{
     prelude::*, FRAMES_PER_SPRITE, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
+    ROUND_LENGTH,
 };
 
 pub fn input(
@@ -114,6 +115,17 @@ pub fn setup_game(mut commands: Commands, misc_sprites: Res<MiscAssets>) {
 pub fn print_p2p_events(mut session: ResMut<P2PSession<GGRSConfig>>) {
     for event in session.events() {
         info!("GGRS Event: {:?}", event);
+    }
+}
+
+pub fn update_screen_timer(
+    frame_count: Res<FrameCount>,
+    mut timer: Query<&mut Text, With<ScreenTimer>>,
+) {
+    let remaining_secs = (ROUND_LENGTH - frame_count.frame) / 60;
+
+    for mut text in timer.iter_mut() {
+        text.sections[0].value = remaining_secs.to_string();
     }
 }
 

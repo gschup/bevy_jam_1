@@ -143,6 +143,7 @@ fn main() {
         .register_rollback_type::<Cake>()
         .register_rollback_type::<Splat>()
         .register_rollback_type::<Crosshair>()
+        .register_rollback_type::<ScreenTimer>()
         // physics types
         .register_rollback_type::<Pos>()
         .register_rollback_type::<Vel>()
@@ -307,7 +308,8 @@ fn main() {
     .add_system_set(
         SystemSet::on_update(AppState::RoundLocal)
             .with_system(update_attacker_sprite)
-            .with_system(update_defender_sprite),
+            .with_system(update_defender_sprite)
+            .with_system(update_screen_timer),
     )
     .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
     // online round
@@ -316,6 +318,7 @@ fn main() {
         SystemSet::on_update(AppState::RoundOnline)
             .with_system(update_attacker_sprite)
             .with_system(update_defender_sprite)
+            .with_system(update_screen_timer)
             .with_system(print_p2p_events),
     )
     .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game));

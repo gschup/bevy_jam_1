@@ -8,7 +8,8 @@ use crate::{
     menu::win::MatchResult,
     physics::prelude::*,
     round::{prelude::*, resources::Input},
-    AppState, AttackerAssets, DefenderAssets, MiscAssets, NUM_PLAYERS, SCREEN_X, SCREEN_Y,
+    AppState, AttackerAssets, DefenderAssets, FontAssets, MiscAssets, BUTTON_TEXT, NUM_PLAYERS,
+    SCREEN_X, SCREEN_Y,
 };
 
 use super::{
@@ -45,7 +46,11 @@ pub fn cleanup_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<
  * ROUND START
  */
 
-pub fn spawn_world(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
+pub fn spawn_world(
+    mut commands: Commands,
+    mut rip: ResMut<RollbackIdProvider>,
+    font_assets: Res<FontAssets>,
+) {
     // todo: could import the body builder from bevy_xpbd to clean this up
     let ground_size = Vec2::new(2000., 2000.); // should just be bigger than the screen
 
@@ -86,6 +91,28 @@ pub fn spawn_world(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) 
             collider: BoxCollider { size: ground_size },
             ..Default::default()
         })
+        .insert(Rollback::new(rip.next_id()))
+        .insert(RoundEntity);
+
+    // screen timer
+    commands
+        .spawn_bundle(Text2dBundle {
+            transform: Transform::from_xyz(0., -SCREEN_Y / 4. - GROUND_LEVEL / 2., 100.),
+            text: Text::with_section(
+                (ROUND_LENGTH / 60).to_string(),
+                TextStyle {
+                    font: font_assets.default_font.clone(),
+                    font_size: 40.0,
+                    color: BUTTON_TEXT,
+                },
+                TextAlignment {
+                    vertical: VerticalAlign::Center,
+                    horizontal: HorizontalAlign::Center,
+                },
+            ),
+            ..Default::default()
+        })
+        .insert(ScreenTimer)
         .insert(Rollback::new(rip.next_id()))
         .insert(RoundEntity);
 }
