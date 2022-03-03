@@ -559,7 +559,7 @@ pub fn splat_cleaning(
 pub fn check_round_end(mut frame_count: ResMut<FrameCount>, mut round_state: ResMut<RoundState>) {
     frame_count.frame += 1;
 
-    // dummy win condition - game ends after ROUND_LENGTH frames
+    // game ends after ROUND_LENGTH frames
     if frame_count.frame >= ROUND_LENGTH {
         *round_state = RoundState::RoundEnd;
     }
@@ -573,6 +573,7 @@ pub fn check_round_end(mut frame_count: ResMut<FrameCount>, mut round_state: Res
 
 // despawns players and the world
 pub fn cleanup_round(
+    splats: Query<Entity, With<Splat>>,
     query: Query<Entity, With<RoundEntity>>,
     mut frame_count: ResMut<FrameCount>,
     mut round_state: ResMut<RoundState>,
@@ -584,14 +585,18 @@ pub fn cleanup_round(
         commands.entity(e).despawn_recursive();
     }
 
+    let round = round_data.cur_round;
+    let splat_count = splats.iter().count();
+
     frame_count.frame = 0;
+    round_data.results.insert(round, splat_count);
     round_data.cur_round += 1; // update round information
 
     if round_data.cur_round >= NUM_ROUNDS {
         // go to win screen
         match app_state.set(AppState::Win) {
             Ok(_) => commands.insert_resource(MatchResult {
-                result: "TODO!".to_owned(), // TODO: should be created from the RoundData
+                result: round_data.to_string(), // TODO: should be created from the RoundData
             }),
             Err(e) => warn!("Could not change app state to AppState::Win : {}", e), // this happens when there is a rollback and the change to app win is queued twice
         };

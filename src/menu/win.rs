@@ -52,7 +52,7 @@ pub fn setup_ui(
                     match_data.result.clone(),
                     TextStyle {
                         font: font_assets.default_font.clone(),
-                        font_size: 96.,
+                        font_size: 40.,
                         color: BUTTON_TEXT,
                     },
                     Default::default(),
