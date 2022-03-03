@@ -85,6 +85,13 @@ impl AttackerState {
         }
     }
 
+    pub fn is_stunned(&self) -> bool {
+        match self {
+            AttackerState::Hit(..) => true,
+            _ => false,
+        }
+    }
+
     pub fn can_clean(&self) -> bool {
         match self {
             AttackerState::Idle(..) | AttackerState::Walk(..) | AttackerState::Land(..) => true,

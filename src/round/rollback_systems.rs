@@ -499,7 +499,9 @@ pub fn cake_collision(
                 .iter()
                 .any(|(a, c, _)| *a == attacker && *c == cake)
             {
-                *state = AttackerState::Hit(0);
+                if !state.is_stunned() {
+                    *state = AttackerState::Hit(0);
+                }
                 cake_collided = true;
             }
         }
@@ -596,7 +598,7 @@ pub fn cleanup_round(
         // go to win screen
         match app_state.set(AppState::Win) {
             Ok(_) => commands.insert_resource(MatchResult {
-                result: round_data.to_string(), // TODO: should be created from the RoundData
+                result: round_data.to_string(),
             }),
             Err(e) => warn!("Could not change app state to AppState::Win : {}", e), // this happens when there is a rollback and the change to app win is queued twice
         };
