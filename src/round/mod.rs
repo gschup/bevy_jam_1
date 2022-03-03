@@ -40,3 +40,8 @@ const ROUND_LENGTH: u32 = 6000;
 
 // fortress pos
 const DEF_X_POS: f32 = 250.;
+
+// cake splat params
+const MIN_SPLAT: u32 = 1;
+const MAX_SPLAT: u32 = 5;
+const SPLAT_SPREAD: f32 = 20.;

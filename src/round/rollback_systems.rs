@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_ggrs::{Rollback, RollbackIdProvider};
 use ggrs::InputStatus;
+use rand::{Rng, SeedableRng};
 
 use crate::{
     checksum::Checksum,
@@ -13,8 +14,8 @@ use crate::{
 use super::{
     ATTACKER_SIZE, CAKE_SIZE, CROSSHAIR_SPEED, DEFENDER_SIZE, DEF_X_POS, FRAMES_PER_SPRITE,
     GROUND_LEVEL, IDLE_THRESH, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
-    INTERLUDE_LENGTH, JUMP_HEIGHT, JUMP_TIME_TO_PEAK, LAND_FRAMES, MAX_SPEED, NUM_ROUNDS,
-    ROUND_LENGTH, STUN_FRAMES,
+    INTERLUDE_LENGTH, JUMP_HEIGHT, JUMP_TIME_TO_PEAK, LAND_FRAMES, MAX_SPEED, MAX_SPLAT, MIN_SPLAT,
+    NUM_ROUNDS, ROUND_LENGTH, SPLAT_SPREAD, STUN_FRAMES,
 };
 
 /*
@@ -458,6 +459,7 @@ pub fn cake_collision(
     contacts: Res<Contacts>,
     static_contacts: Res<StaticContacts>,
     mut rip: ResMut<RollbackIdProvider>,
+    frame_count: Res<FrameCount>,
     mut attackers: Query<(Entity, &mut AttackerState)>,
     cakes: Query<(Entity, &Transform), With<Cake>>,
 ) {
@@ -485,20 +487,26 @@ pub fn cake_collision(
         // splat
         if cake_collided {
             commands.entity(cake).despawn_recursive();
-            commands
-                .spawn_bundle(SpriteBundle {
-                    transform: Transform::from_xyz(t.translation.x, GROUND_LEVEL, 10.),
-                    sprite: Sprite {
-                        color: Color::RED,
-                        custom_size: Some(Vec2::new(12., 6.)),
+
+            let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(frame_count.frame as u64);
+            for _ in 0..rng.gen_range(MIN_SPLAT..MAX_SPLAT) {
+                let rand_splat = rng.gen::<f32>() * 2. - 1.; // between -1 and 1
+                let x_pos: f32 = t.translation.x + rand_splat * SPLAT_SPREAD;
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        transform: Transform::from_xyz(x_pos, GROUND_LEVEL, 10.),
+                        sprite: Sprite {
+                            color: Color::RED,
+                            custom_size: Some(Vec2::new(12., 6.)),
+                            ..Default::default()
+                        },
                         ..Default::default()
-                    },
-                    ..Default::default()
-                })
-                .insert(Splat)
-                .insert(Checksum::default())
-                .insert(Rollback::new(rip.next_id()))
-                .insert(RoundEntity);
+                    })
+                    .insert(Splat)
+                    .insert(Checksum::default())
+                    .insert(Rollback::new(rip.next_id()))
+                    .insert(RoundEntity);
+            }
         }
     }
 }
