@@ -61,6 +61,10 @@ pub struct MiscAssets {
     pub background: Handle<Image>,
     #[asset(path = "sprites/misc/cake.png")]
     pub cake: Handle<Image>,
+    #[asset(path = "sprites/misc/splat1.png")]
+    pub splat1: Handle<Image>,
+    #[asset(path = "sprites/misc/splat2.png")]
+    pub splat2: Handle<Image>,
     #[asset(path = "sprites/misc/crosshair.png")]
     pub crosshair: Handle<Image>,
 }

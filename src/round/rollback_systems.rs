@@ -487,6 +487,7 @@ pub fn cake_collision(
     static_contacts: Res<StaticContacts>,
     mut rip: ResMut<RollbackIdProvider>,
     frame_count: Res<FrameCount>,
+    misc_sprites: Res<MiscAssets>,
     mut attackers: Query<(Entity, &mut AttackerState)>,
     cakes: Query<(Entity, &Transform), With<Cake>>,
 ) {
@@ -518,17 +519,18 @@ pub fn cake_collision(
             commands.entity(cake).despawn_recursive();
 
             let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(frame_count.frame as u64);
-            for _ in 0..rng.gen_range(MIN_SPLAT..MAX_SPLAT) {
+            for i in 0..rng.gen_range(MIN_SPLAT..MAX_SPLAT) {
                 let rand_splat = rng.gen::<f32>() * 2. - 1.; // between -1 and 1
                 let x_pos: f32 = t.translation.x + rand_splat * SPLAT_SPREAD;
+                let splat_sprite = if i % 2 == 0 {
+                    misc_sprites.splat1.clone()
+                } else {
+                    misc_sprites.splat2.clone()
+                };
                 commands
                     .spawn_bundle(SpriteBundle {
-                        transform: Transform::from_xyz(x_pos, GROUND_LEVEL, 10.),
-                        sprite: Sprite {
-                            color: Color::RED,
-                            custom_size: Some(Vec2::new(12., 6.)),
-                            ..Default::default()
-                        },
+                        texture: splat_sprite,
+                        transform: Transform::from_xyz(x_pos, GROUND_LEVEL + 12., 10.),
                         ..Default::default()
                     })
                     .insert(Splat)
