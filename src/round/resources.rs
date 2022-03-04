@@ -24,6 +24,31 @@ pub enum RoundState {
     RoundEnd,
 }
 
+#[derive(Copy, Clone)]
+// display the connection status
+pub enum ConnectionStatus {
+    Synchronizing,
+    Running,
+    Interrupted,
+    Disconnected,
+}
+
+impl std::fmt::Display for ConnectionStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConnectionStatus::Synchronizing => write!(f, "Synchronizing"),
+            ConnectionStatus::Running => write!(f, "Running"),
+            ConnectionStatus::Interrupted => write!(f, "Interrupted"),
+            ConnectionStatus::Disconnected => write!(f, "Disconnected"),
+        }
+    }
+}
+
+pub struct ConnectionInfo {
+    pub status: ConnectionStatus,
+    pub ping: u128,
+}
+
 #[derive(Debug, Default, Clone, Reflect, Component)]
 pub struct RoundData {
     pub cur_round: u32,               // the current round

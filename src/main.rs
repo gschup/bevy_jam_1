@@ -317,13 +317,19 @@ fn main() {
     )
     .add_system_set(SystemSet::on_exit(AppState::RoundLocal).with_system(cleanup_game))
     // online round
-    .add_system_set(SystemSet::on_enter(AppState::RoundOnline).with_system(setup_game))
+    .add_system_set(
+        SystemSet::on_enter(AppState::RoundOnline)
+            .with_system(setup_game)
+            .with_system(setup_network_stats_ui),
+    )
     .add_system_set(
         SystemSet::on_update(AppState::RoundOnline)
             .with_system(update_attacker_sprite)
             .with_system(update_defender_sprite)
             .with_system(update_screen_timer)
-            .with_system(print_p2p_events),
+            .with_system(handle_p2p_events)
+            .with_system(update_connection_info)
+            .with_system(update_connection_display),
     )
     .add_system_set(SystemSet::on_exit(AppState::RoundOnline).with_system(cleanup_game));
     // ldtk loading TODO: move to assetLoader plugin?

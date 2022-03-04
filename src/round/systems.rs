@@ -3,11 +3,14 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::SessionType;
 use ggrs::{P2PSession, PlayerHandle};
 
-use crate::{menu::connect::LocalHandles, AttackerAssets, DefenderAssets, GGRSConfig, MiscAssets};
+use crate::{
+    menu::connect::LocalHandles, AttackerAssets, DefenderAssets, FontAssets, GGRSConfig,
+    MiscAssets, BUTTON_TEXT, NUM_PLAYERS, SCREEN_X, SCREEN_Y,
+};
 
 use super::{
-    prelude::*, FRAMES_PER_SPRITE, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_UP,
-    ROUND_LENGTH,
+    prelude::*, FRAMES_PER_SPRITE, GROUND_LEVEL, INPUT_ACT, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT,
+    INPUT_UP, ROUND_LENGTH,
 };
 
 pub fn input(
@@ -112,9 +115,88 @@ pub fn setup_game(mut commands: Commands, misc_sprites: Res<MiscAssets>) {
         .insert(GameEntity);
 }
 
-pub fn print_p2p_events(mut session: ResMut<P2PSession<GGRSConfig>>) {
+pub fn setup_network_stats_ui(mut commands: Commands, font_assets: Res<FontAssets>) {
+    commands.insert_resource(ConnectionInfo {
+        status: ConnectionStatus::Synchronizing,
+        ping: 0,
+    });
+    commands
+        .spawn_bundle(Text2dBundle {
+            transform: Transform::from_xyz(
+                -SCREEN_X / 4.,
+                -SCREEN_Y / 4. - GROUND_LEVEL / 2.,
+                100.,
+            ),
+            text: Text {
+                sections: vec![
+                    TextSection {
+                        value: "Ping: -\n".to_owned(),
+                        style: TextStyle {
+                            font: font_assets.default_font.clone(),
+                            font_size: 20.0,
+                            color: BUTTON_TEXT,
+                        },
+                    },
+                    TextSection {
+                        value: "Status: -".to_owned(),
+                        style: TextStyle {
+                            font: font_assets.default_font.clone(),
+                            font_size: 20.0,
+                            color: BUTTON_TEXT,
+                        },
+                    },
+                ],
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(NetworkStatsUi)
+        .insert(GameEntity);
+}
+
+pub fn handle_p2p_events(
+    mut con_info: ResMut<ConnectionInfo>,
+    mut session: ResMut<P2PSession<GGRSConfig>>,
+) {
     for event in session.events() {
         info!("GGRS Event: {:?}", event);
+        match event {
+            ggrs::GGRSEvent::Synchronized { .. } => con_info.status = ConnectionStatus::Running,
+            ggrs::GGRSEvent::Disconnected { .. } => {
+                con_info.status = ConnectionStatus::Disconnected
+            }
+            ggrs::GGRSEvent::NetworkInterrupted { .. } => {
+                con_info.status = ConnectionStatus::Interrupted
+            }
+            ggrs::GGRSEvent::NetworkResumed { .. } => con_info.status = ConnectionStatus::Running,
+            _ => (),
+        }
+    }
+}
+
+// TODO: for now, this assumes only a single remote player
+pub fn update_connection_info(
+    mut con_info: ResMut<ConnectionInfo>,
+    session: ResMut<P2PSession<GGRSConfig>>,
+    local_handles: Res<LocalHandles>,
+) {
+    for handle in 0..NUM_PLAYERS {
+        if local_handles.handles.contains(&handle) {
+            continue;
+        }
+        if let Ok(stats) = session.network_stats(handle) {
+            con_info.ping = stats.ping;
+        }
+    }
+}
+
+pub fn update_connection_display(
+    con_info: Res<ConnectionInfo>,
+    mut text_query: Query<&mut Text, With<NetworkStatsUi>>,
+) {
+    for mut text in text_query.iter_mut() {
+        text.sections[0].value = format!("Ping: {}\n", con_info.ping);
+        text.sections[1].value = format!("Status: {}", con_info.status);
     }
 }
 
@@ -135,6 +217,7 @@ pub fn cleanup_game(query: Query<Entity, With<GameEntity>>, mut commands: Comman
     commands.remove_resource::<LocalHandles>();
     commands.remove_resource::<P2PSession<GGRSConfig>>();
     commands.remove_resource::<SessionType>();
+    commands.remove_resource::<ConnectionInfo>();
 
     for e in query.iter() {
         commands.entity(e).despawn_recursive();

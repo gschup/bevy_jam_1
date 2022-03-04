@@ -26,6 +26,10 @@ pub struct Splat;
 
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]
+pub struct NetworkStatsUi;
+
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Crosshair;
 
 // cleaned up after every round
