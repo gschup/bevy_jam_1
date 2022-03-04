@@ -16,7 +16,6 @@ bevy_system_graph = "0.1"
 matchbox_socket = { git = "https://github.com/johanhelsing/matchbox", features = ["ggrs-socket"] }
 log = "0.4"
 derive_more = "0.99"
-bevy_ecs_ldtk = "0.2"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 

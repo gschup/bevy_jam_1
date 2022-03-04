@@ -5,7 +5,6 @@ mod round;
 
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
-use bevy_ecs_ldtk::prelude::*;
 use bevy_ggrs::GGRSPlugin;
 use checksum::{checksum_attackers, checksum_cakes, checksum_crosshair, checksum_splat, Checksum};
 use ggrs::Config;
@@ -261,8 +260,6 @@ fn main() {
     .insert_resource(ClearColor(Color::BLACK))
     // physics
     .add_plugin(PhysicsPlugin)
-    .add_plugin(LdtkPlugin)
-    .insert_resource(LevelSelection::Index(0))
     // main menu
     .add_system_set(SystemSet::on_enter(AppState::MenuMain).with_system(menu::main::setup_ui))
     .add_system_set(
