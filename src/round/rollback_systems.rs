@@ -650,9 +650,9 @@ pub fn cleanup_round(
         let winner_str = if local_handles.handles.len() == 1 {
             // online mode
             if local_handles.handles[0] == winner as usize {
-                "You won!".to_owned()
-            } else {
                 "You lost!".to_owned()
+            } else {
+                "You won!".to_owned()
             }
         } else {
             // local mode
