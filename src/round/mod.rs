@@ -35,7 +35,7 @@ const STUN_FRAMES: usize = 60;
 
 // round params
 const NUM_ROUNDS: u32 = 2;
-const INTERLUDE_LENGTH: u32 = 60;
+const INTERLUDE_LENGTH: u32 = 300;
 const ROUND_LENGTH: u32 = 1800;
 
 // fortress pos

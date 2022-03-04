@@ -5,7 +5,7 @@ use rand::{Rng, SeedableRng};
 
 use crate::{
     checksum::Checksum,
-    menu::win::MatchResult,
+    menu::{connect::LocalHandles, win::MatchResult},
     physics::prelude::*,
     round::{prelude::*, resources::Input},
     AppState, AttackerAssets, DefenderAssets, FontAssets, MiscAssets, BUTTON_TEXT, NUM_PLAYERS,
@@ -23,9 +23,48 @@ use super::{
  * INTERLUDE
  */
 
-pub fn setup_interlude(mut state: ResMut<RoundState>) {
+pub fn setup_interlude(
+    mut commands: Commands,
+    mut state: ResMut<RoundState>,
+    round_data: Res<RoundData>,
+    local_handles: Res<LocalHandles>,
+    font_assets: Res<FontAssets>,
+) {
+    // local mode
+    let info_string = if local_handles.handles.len() > 1 {
+        if round_data.cur_round == 0 {
+            "Janitor: ARROWS\n Clean the cake splats!\nFortress WASD + SPACE\n Make a MESS!"
+                .to_owned()
+        } else {
+            "ROUND SWITCH!\nJanitor: WASD\n Clean the cake splats!\nFortress ARROWS + RSHIFT\n Make a MESS!"
+                .to_owned()
+        }
+    } else {
+        if round_data.cur_round as usize == local_handles.handles[0] {
+            "You are the Fortress!\nWASD + SPACE\n Make a MESS!".to_owned()
+        } else {
+            "You are the Janitor!\nWASD\n Clean the cake splats!".to_owned()
+        }
+    };
     *state = RoundState::Interlude;
-    //println!("INTERLUDE_START");
+    commands
+        .spawn_bundle(Text2dBundle {
+            transform: Transform::from_xyz(0., 0., 100.),
+            text: Text::with_section(
+                info_string,
+                TextStyle {
+                    font: font_assets.default_font.clone(),
+                    font_size: 40.0,
+                    color: BUTTON_TEXT,
+                },
+                TextAlignment {
+                    vertical: VerticalAlign::Center,
+                    horizontal: HorizontalAlign::Center,
+                },
+            ),
+            ..Default::default()
+        })
+        .insert(Interlude);
 }
 
 pub fn run_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
@@ -33,13 +72,20 @@ pub fn run_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<Roun
     if frame_count.frame >= INTERLUDE_LENGTH {
         *state = RoundState::InterludeEnd;
     }
-    // println!("INTERLUDE {}", frame_count.frame);
 }
 
-pub fn cleanup_interlude(mut frame_count: ResMut<FrameCount>, mut state: ResMut<RoundState>) {
+pub fn cleanup_interlude(
+    mut commands: Commands,
+    mut frame_count: ResMut<FrameCount>,
+    mut state: ResMut<RoundState>,
+    query: Query<Entity, With<Interlude>>,
+) {
     frame_count.frame = 0;
     *state = RoundState::RoundStart;
-    // println!("INTERLUDE_END");
+
+    for e in query.iter() {
+        commands.entity(e).despawn_recursive();
+    }
 }
 
 /*
@@ -521,7 +567,8 @@ pub fn cake_collision(
             let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(frame_count.frame as u64);
             for i in 0..rng.gen_range(MIN_SPLAT..MAX_SPLAT) {
                 let rand_splat = rng.gen::<f32>() * 2. - 1.; // between -1 and 1
-                let x_pos: f32 = t.translation.x + rand_splat * SPLAT_SPREAD;
+                let mut x_pos: f32 = t.translation.x + rand_splat * SPLAT_SPREAD;
+                x_pos = x_pos.clamp(-SCREEN_X / 4. + 13., SCREEN_X / 4.);
                 let splat_sprite = if i % 2 == 0 {
                     misc_sprites.splat1.clone()
                 } else {
@@ -579,6 +626,7 @@ pub fn check_round_end(mut frame_count: ResMut<FrameCount>, mut round_state: Res
 pub fn cleanup_round(
     splats: Query<Entity, With<Splat>>,
     query: Query<Entity, With<RoundEntity>>,
+    local_handles: Res<LocalHandles>,
     mut frame_count: ResMut<FrameCount>,
     mut round_state: ResMut<RoundState>,
     mut round_data: ResMut<RoundData>,
@@ -597,11 +645,24 @@ pub fn cleanup_round(
     round_data.cur_round += 1; // update round information
 
     if round_data.cur_round >= NUM_ROUNDS {
+        // determine winner
+        let winner = round_data.winner();
+        let winner_str = if local_handles.handles.len() == 1 {
+            // online mode
+            if local_handles.handles[0] == winner as usize {
+                "You won!".to_owned()
+            } else {
+                "You lost!".to_owned()
+            }
+        } else {
+            // local mode
+            format!("\nJanitor {} wins!", winner + 1)
+        };
+        let mut result_str = round_data.to_string();
+        result_str.push_str(&winner_str);
         // go to win screen
         match app_state.set(AppState::Win) {
-            Ok(_) => commands.insert_resource(MatchResult {
-                result: round_data.to_string(),
-            }),
+            Ok(_) => commands.insert_resource(MatchResult { result: result_str }),
             Err(e) => warn!("Could not change app state to AppState::Win : {}", e), // this happens when there is a rollback and the change to app win is queued twice
         };
     } else {

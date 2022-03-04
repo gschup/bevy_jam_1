@@ -61,15 +61,16 @@ impl RoundData {
         for (k, v) in self.results.iter() {
             str.push_str(&format!("Janitor {}: {} splats left\n", k + 1, v));
         }
-        let winner = self
-            .results
+        //str.push_str(&format!("\nJanitor {} wins!", winner + 1));
+        str
+    }
+
+    pub fn winner(&self) -> u32 {
+        self.results
             .iter()
             .min_by(|a, b| a.1.cmp(&b.1))
             .map(|(k, _)| *k)
-            .expect("No entries in results.");
-
-        str.push_str(&format!("\nJanitor {} wins!", winner + 1));
-        str
+            .expect("No entries in results.")
     }
 }
 

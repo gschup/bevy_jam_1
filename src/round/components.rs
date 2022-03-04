@@ -18,6 +18,10 @@ pub struct ScreenTimer;
 
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]
+pub struct Interlude;
+
+#[derive(Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Cake;
 
 #[derive(Default, Component, Reflect)]
