@@ -1,6 +1,6 @@
-# Bevy Jam Entry
+# Bevy Jam #1 Entry
 
-WIP
+Part of the Bevy Jam #1 [[ITCH.IO]](https://gorktheork.itch.io/bevy-jam-1-submission)
 
 ## Licensing
 
